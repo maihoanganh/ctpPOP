@@ -39,16 +39,16 @@ Pkg> add https://github.com/maihoanganh/ctpPOP.git
 The following examples briefly guide to use ctpPOP:
 
 ## Polynomial optimization
-Consider an equality constrained POP on the unit sphere as follows:
+Consider the following POP:
 ```ruby
 using DynamicPolynomials
 
 @polyvar x[1:2] # variables
 
-f=x[1]^2+0.5*x[1]*x[2]-0.25*x[2]^2+0.75*x[1]-0.3*x[2] # objective function to minimize
+f=x[1]^2+0.5*x[1]*x[2]-0.25*x[2]^2+0.75*x[1]-0.3*x[2] # the objective polynomial to minimize
 
-g=[1.0-sum(x.^2)] # inequality constraints
-h=[R-sum(x.^2);(x[1]-1.0)*x[2]] # equality constraints
+g=[1.0-sum(x.^2)] # the inequality constraints
+h=[R-sum(x.^2);(x[1]-1.0)*x[2]] # the equality constraints
 
 k=2 # relaxation order
 
@@ -58,7 +58,7 @@ using ctpPOP
 n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=ctpPOP.get_info(x,f,g,h,sparse=false);
 
 # get the optimal value of the Moment-SOS relaxation of order k
-opt_val1=ctpPOP.POP_dense_CGAL( n, # the number of variables
+opt_val=ctpPOP.POP_dense_CGAL( n, # the number of variables
                                 m, # the number of the inequality constraints
                                 l, # the number of the equality constraints
                                 lmon_g, # the number of terms in each inequality constraint
@@ -79,7 +79,7 @@ opt_val1=ctpPOP.POP_dense_CGAL( n, # the number of variables
                                 check_tol_each_iter=true) # check the tolerance at each iteration
 ```
 
-See other examples in the [link](https://github.com/maihoanganh/ctpPOP/blob/master/examples).
+See other examples in the [link](https://github.com/maihoanganh/ctpPOP/tree/main/examples).
 
 
 
