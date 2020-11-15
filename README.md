@@ -79,7 +79,7 @@ opt_val1=ctpPOP.POP_dense_CGAL( n, # the number of variables
                                 check_tol_each_iter=true) # check the tolerance at each iteration
 ```
 
-See other examples in the [link](https://github.com/maihoanganh/ctpPOP/blob/master/examples).
+See other examples in the [link](https://github.com/maihoanganh/ctpPOP/tree/main/examples).
 
 
 
