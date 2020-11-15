@@ -6,6 +6,7 @@
 with some special cases of inequality constraints **gi**:
 
 Case 1: Annulus constraints on subsets of variables: **Ui >= ||x(Ti)||^2 >= Li**.
+
 Case 2: Simlex constraints: **xi >= 0, 1 - x1 -...- xn >= 0**.
 
 - The main idea of SpectralPOP is to solve the Moment-SOS relaxation of the form:
