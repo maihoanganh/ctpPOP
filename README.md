@@ -1,50 +1,42 @@
 # ctpPOP
-- ctpPOP is a Julia package of solving equality constrained polynomial optimization problems (POPs) on a Euclidean sphere:
+- ctpPOP is a Julia package of solving polynomial optimization problem (POP):
 
-**inf_x { f(x) : x in R^n, hj(x) = 0, j = 1,...,l } with h1 := R - |x|^2,**
+**inf_{x in R^n} { f(x) : gi(x) = 0, hj(x) = 0},**
 
-as well as extensive application in squared systems of polynomial equations solving:
+with some special cases of inequality constraints **gi**:
 
-**pj(x) = 0, j=1,...,n.**
+Case 1: Annulus constraints on subsets of variables: **Ui >= ||x(Ti)||^2 >= Li**.
+Case 2: Simlex constraints: **xi >= 0, 1 - x1 -...- xn >= 0**.
 
-- The main idea of SpectralPOP is to solve an SDP (moment) relaxation of the form:
+- The main idea of SpectralPOP is to solve the Moment-SOS relaxation of the form:
 
-**v = sup_X { <C,X> : X is psd, AX = b },**
+**v = inf_X { <C,X> : X is psd, AX = b },**
 
 which has constant trace property:
 
 **AX = b => trace(X) = a,**
 
-by using spectral (the largest eigenvalue) minimization:
+by using Conditional gradient-based augmented Lagrangian (CGAL) method.
 
-**v = inf_z { aλ1(C - A'z) + b'z }**
-
-with Limited memory bundle method instead of costly Interior-point methods.
-
-- Compared to SumOfSquares (Mosek) and SketchyCGAL, SpectralPOP is cheaper, faster, but maintains the same accuracy with SumOfSquares on a tested sample of random dense equality constrained QCQPs on the unit sphere.
+- Although possibly slower than the other method on the sparse POPs, ctpPOP is much more robust on the dense ones.
 
 # Required softwares
-SpectralPOP has been implemented on a desktop compute with the following softwares:
+ctpPOP has been implemented on a desktop compute with the following softwares:
 - Ubuntu 18.04.4
 - Julia 1.3.1
-- Fortran 2018
 
 The following sofwares are used for comparison purposes:
-- [SumOfSquares.jl](https://github.com/JuliaOpt/SumOfSquares.jl)
 - [Mosek 9.1](https://www.mosek.com)
-- [SketchyCGAL](https://github.com/alpyurtsever/SketchyCGAL)
-
-# Remark
-- Limited memory bundle method is only supported on Ubuntu.
+- [COSMO](https://github.com/oxfordcontrol/COSMO.jl)
 
 # Installation
-- To use SpectralPOP in Julia, run
+- To use ctpPOP in Julia, run
 ```ruby
-Pkg> add https://github.com/maihoanganh/SpectralPOP.git
+Pkg> add https://github.com/maihoanganh/ctpPOP.git
 ```
 
 # Usage
-The following examples briefly guide to use SpectralPOP (see more examples in files test/test_....ipynb):
+The following examples briefly guide to use ctpPOP:
 
 ## Polynomial optimization
 Consider an equality constrained POP on the unit sphere as follows:
@@ -55,84 +47,60 @@ using DynamicPolynomials
 
 f=x[1]^2+0.5*x[1]*x[2]-0.25*x[2]^2+0.75*x[1]-0.3*x[2] # objective function to minimize
 
-R=1.0 # squared radius of a sphere constraint
-h=[R-sum(x.^2);(x[1]-1.0)*x[2]] # equality constraints (including the sphere constraint)
+g=[1.0-sum(x.^2)] # inequality constraints
+h=[R-sum(x.^2);(x[1]-1.0)*x[2]] # equality constraints
 
-k=2 # relaxed order
+k=2 # relaxation order
 
-using SpectralPOP
+using ctpPOP
 
-# get the optimal value and an optimal solution
-opt_val,opt_sol = CTP_POP(x,f,h,k,R,method="LMBM",EigAlg="Arpack",tol=1e-5)
+# get information from the input data f,gi,hj
+n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=ctpPOP.get_info(x,f,g,h,sparse=false);
+
+# get the optimal value of the Moment-SOS relaxation of order k
+opt_val1=ctpPOP.POP_dense_CGAL( n, # the number of variables
+                                m, # the number of the inequality constraints
+                                l, # the number of the equality constraints
+                                lmon_g, # the number of terms in each inequality constraint
+                                supp_g, # the support of each inequality constraint
+                                coe_g, # the coefficients of each inequality constraint
+                                lmon_h, # the number of terms in each equality constraint
+                                supp_h, # the support of each equality constraint
+                                coe_h, # the coefficients of each equality constraint
+                                lmon_f, # the number of terms in the objective polynomial
+                                supp_f, # the support of the objective polynomial
+                                coe_f, # the coefficients of the objective polynomial
+                                dg, # the degree of each inequality constraint
+                                dh, # the degree of each equality constraint
+                                k,
+                                maxit=Int64(1e6), # the maximal iteration of CGAL solver
+                                tol=1e-3, # the tolerance of CGAL solver
+                                use_eqcons_to_get_constant_trace=false, # use the equality constraints to get constant trace
+                                check_tol_each_iter=true) # check the tolerance at each iteration
 ```
-Here:
 
-- ```method="LMBM"```: [Limited memory bundle method](https://github.com/maihoanganh/LMBMinterface) (solver of spectral minimization). You can also choose ```method="PB"``` ([Proximal bundle method](https://github.com/maihoanganh/ProximalBundleMethod)) or ```method="SketchyCGAL"```.
+See other examples in the [link](https://github.com/maihoanganh/ctpPOP/blob/master/examples).
 
-- ```EigAlg="Arpack"```: [Arpack package](https://github.com/JuliaLinearAlgebra/Arpack.jl) (to compute the largest eigenvalue). You can also choose ```EigAlg="Normal"``` to use essential function of computing eigenvalues in Julia or ```EigAlg="Mix"``` to use the combination of the two methods.
 
-- ```tol=1e-5```: the precision of the solver for spectral minimization.
-
-See other options in the [link](https://github.com/maihoanganh/SpectralPOP/blob/master/examples/test_random_dense_quadratic_on_sphere.ipynb).
-
-To solve other types of POPs, see the links below:
-- [Constrained POPs with single inequality (ball) constraint](https://github.com/maihoanganh/SpectralPOP/blob/master/examples/test_random_dense_QCQP_unique_inequality_(ball)_constraint.ipynb);
-- [Constrained POPs on a ball](https://github.com/maihoanganh/SpectralPOP/blob/master/examples/test_random_dense_QCQP_on_ball.ipynb).
-
-## Squared systems of polynomial equations
-
-```ruby
-using DynamicPolynomials
-
-@polyvar x[1:2] # variables
-
-# mickey equations
-h=[x[1]^2 + 4*x[2]^2 - 4;
-        2*x[2]^2 - x[1]]
-
-L=10 # squared radius of a ball centered at origin containing at least one real root
-k=1 # relaxed order
-
-using SpectralPOP
-
-# get a real root
-root = ASC_PolySys(x,h,k,L,method="LMBM",EigAlg="Arpack",tol=1e-5)
-```
 
 # References
 For more details, please refer to:
 
-**N. H. A. Mai, J.-B. Lasserre, and V. Magron. A hierarchy of spectral relaxations for polynomial optimization, 2020. Forthcoming.**
+**N. H. A. Mai, J.-B. Lasserre, V. Magron and J. Wang. Exploiting constant trace property in large-scale polynomial optimization, 2020. Forthcoming.**
 
 The following codes are to run the paper's benchmarks:
 ```ruby
 using SpectralPOP
 
-# Polynomial optimization
-SpectralPOP.test_random_dense_quadratic_on_sphere() # Table 2
-SpectralPOP.test_random_dense_equality_constrained_QCQP_on_sphere_first_order() # Table 3
-SpectralPOP.test_random_dense_equality_constrained_QCQP_on_sphere_second_order() # Table 4 and 5
-SpectralPOP.Evaluation_comparisons() # Table 6
-SpectralPOP.test_random_dense_QCQP_unique_inequality_ball_constraint() # Table 7
-SpectralPOP.test_random_dense_QCQP_on_ball() # Table 8
-SpectralPOP.Norm_Subgrad() # Table 9
-SpectralPOP.test_random_dense_quartics_on_sphere() # Table 10
+ctpPOP.test_dense_POP_ball()
+ctpPOP.test_dense_POP_annulus()
+ctpPOP.test_dense_POP_box()
+ctpPOP.test_dense_POP_simplex()
+ctpPOP.test_TS_POP_ball()
+ctpPOP.test_TS_POP_box()
+ctpPOP.test_CS_POP_ball()
+ctpPOP.test_CS_POP_box()
+ctpPOP.test_mix_POP_ball()
+ctpPOP.test_mix_POP_box()
 
-# Polynomial systems (Table 11)
-SpectralPOP.test_chemkin()
-SpectralPOP.test_d1()
-SpectralPOP.test_des22_24()
-SpectralPOP.test_i1()
-SpectralPOP.test_katsura10()
-SpectralPOP.test_katsura9()
-SpectralPOP.test_katsura8()
-SpectralPOP.test_katsura7()
-SpectralPOP.test_katsura6()
-SpectralPOP.test_kin1()
-SpectralPOP.test_ku10()
-SpectralPOP.test_pole27sys()
-SpectralPOP.test_pole28sys()
-SpectralPOP.test_stewgou()
 ```
-
-# ctpPOP

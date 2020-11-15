@@ -28,11 +28,11 @@ function test_OPF_case5_pjm(data::Dict{String,Any})
     
     f/=norm_coe_f
     g=[g[i]./abs(coe_g[i][1]) for i in 1:m];
-    h=[h[i]./abs(coe_h[i][end]) for i in 1:l];
+    #h=[h[i]./abs(coe_h[i][end]) for i in 1:l];
     
     coe_f=coe_f./norm_coe_f
     coe_g=[coe_g[i]./abs(coe_g[i][1]) for i in 1:m];
-    coe_h=[coe_h[i]./abs(coe_h[i][end]) for i in 1:l];
+    #coe_h=[coe_h[i]./abs(coe_h[i][end]) for i in 1:l];
     
 
     @time begin
@@ -43,7 +43,7 @@ function test_OPF_case5_pjm(data::Dict{String,Any})
     println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
 
-    ctpPOP.POP_CGAL(x,f,g,h,k,EigAlg="Arpack",maxit=1e10,tol=1e-3,UseEq=false)
+    ctpPOP.POP_CGAL(x,f,g,h,k,maxit=1e10,tol=1e-2,UseEq=false)
  
     #ctpPOP.POP_TS_CGAL(x,f,g,h,k,t,EigAlg="Arpack",maxit=1e10,tol=1e-2,UseEq=false)
 

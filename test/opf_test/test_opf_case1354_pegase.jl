@@ -10,7 +10,7 @@ function test_OPF_case1354_pegase(data::Dict{String,Any})
     println("Number of inequality constraints: m=",length(g))
     println("Number of equality constraints: l=",length(h))
     println("====================")
-    k=2; t=2;
+    k=1; t=2;
     println("Relaxed order: k=",k)
     println("Sparse order: t=",t)
     println("====================")
@@ -39,7 +39,7 @@ function test_OPF_case1354_pegase(data::Dict{String,Any})
     
      @time begin
     opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS="block",CTP=false);
-    opt,sol,data=cs_tssos_higher!(data,TS="block");
+    #opt,sol,data=cs_tssos_higher!(data,TS="block");
     end
 
     println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
@@ -50,18 +50,7 @@ end
 
 
 function run_opf_case1354_pegase()
-    data=Vector{Dict{String,Any}}(undef,5)
-    #data[1] = PolyPowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/OPFproblems/pglib_opf_case3_lmbd.m")
-    #data[2] = PolyPowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/OPFproblems/pglib_opf_case5_pjm.m")
-    #data[3] = PolyPowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/OPFproblems/pglib_opf_case118_ieee__sad.m")
-    #data[4] = PolyPowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/OPFproblems/pglib_opf_case2312_goc.m")
-    data[5] = PolyPowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/OPFproblems/pglib_opf_case1354_pegase.m")
-    for j in 5:5
-        #try 
-        test_OPF_case1354_pegase(data[j])
-        #=catch
-            println("Error!!!!!")
-        end=#
-        println("====================")
-    end
+    data = PolyPowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/OPFproblems/pglib_opf_case1354_pegase.m")
+    test_OPF_case1354_pegase(data)
+
 end
