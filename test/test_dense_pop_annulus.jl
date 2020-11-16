@@ -1,36 +1,18 @@
-function test_POP_annulus(nvarmin::Int64,nvarmax::Int64,eqcons::Bool)
-    k=2
-    
+function test_dense_POP_annulus(nvarmin::Int64,nvarmax::Int64,k::Int64;have_eqcons::Bool=true)
     @polyvar x[1:1]
     f=Polynomial{true,Float64}(x[1]+0.0)
     g=Vector{Polynomial{true,Float64}}([])
     h=Vector{Polynomial{true,Float64}}([])
     
     for n in nvarmin:10:nvarmax
-        x,f,g,h=POP_annulus(n,k,eqcons=eqcons)
-        println()
-        println("--------------------------------------------------")
-        println()
-        POP_CGAL(x,f,g,h,k;EigAlg="Arpack",maxit=1e10,tol=1e-3,UseEq=false)
-        println()
-        println("--------------------------------------------------")
-        println()
-        POP_LMBM(x,f,g,h,k;EigAlg="Arpack",tol=1e-3,UseEq=false)
-        println()
-        println("--------------------------------------------------")
-        println()
-        try
-            SumofSquares_POP(x,f,g,h,k,tol=1e-3)
-        catch
-            println("Mosek is out of space!!!")
-        end
-        println()
-        println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-        println()
+        x,f,g,h=generate_dense_POP_annulus(n,have_eqcons=have_eqcons)
+        println("Relaxed order: k=",k)
+        println("====================")
+        run_dense_POP(x,f,g,h,k)
     end
 end
     
-function POP_annulus(n::Int64,k::Int64;eqcons::Bool=false)
+function generate_dense_POP_annulus(n::Int64;have_eqcons::Bool=false)
     println("***Problem setting***")
 
 
@@ -58,7 +40,7 @@ function POP_annulus(n::Int64,k::Int64;eqcons::Bool=false)
     println("Number of inequality constraints: m=",m)
     println("====================")
     
-    if eqcons
+    if have_eqcons
         l=ceil(Int64, n/4)
         h=Vector{Polynomial{true,Float64}}(undef,l)
     else
@@ -80,9 +62,6 @@ function POP_annulus(n::Int64,k::Int64;eqcons::Bool=false)
     println("Number of equality constraints: l=",l)
     println("====================")
 
-
-    println("Relaxed order: k=",k)
-    println("====================")
         
     return x,f,g,h
 end

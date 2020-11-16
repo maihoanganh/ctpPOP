@@ -17,7 +17,7 @@ which has constant trace property:
 
 **AX = b => trace(X) = a,**
 
-by using Conditional gradient-based augmented Lagrangian (CGAL) method.
+by using Conditional gradient-based augmented Lagrangian (CGAL) and Limited memory bundle method (LMBM).
 
 - Although possibly slower than the other method on the sparse POPs, ctpPOP is much more robust on the dense ones.
 
@@ -30,6 +30,10 @@ The following sofwares are used for comparison purposes:
 - [Mosek 9.1](https://www.mosek.com)
 - [COSMO](https://github.com/oxfordcontrol/COSMO.jl)
 
+
+# Remark
+- LMBM is only supported on Ubuntu with Fortran 2018.
+
 # Installation
 - To use ctpPOP in Julia, run
 ```ruby
@@ -40,7 +44,7 @@ Pkg> add https://github.com/maihoanganh/ctpPOP.git
 The following examples briefly guide to use ctpPOP:
 
 ## Polynomial optimization
-Consider the following POP:
+Consider the following POP on the unit ball:
 ```ruby
 using DynamicPolynomials
 
@@ -59,7 +63,7 @@ using ctpPOP
 n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=ctpPOP.get_info(x,f,g,h,sparse=false);
 
 # get the optimal value of the Moment-SOS relaxation of order k
-opt_val=ctpPOP.POP_dense_CGAL( n, # the number of variables
+opt_val=ctpPOP.POP_dense_CGAL(  n, # the number of variables
                                 m, # the number of the inequality constraints
                                 l, # the number of the equality constraints
                                 lmon_g, # the number of terms in each inequality constraint
@@ -77,7 +81,7 @@ opt_val=ctpPOP.POP_dense_CGAL( n, # the number of variables
                                 maxit=Int64(1e6), # the maximal iteration of CGAL solver
                                 tol=1e-3, # the tolerance of CGAL solver
                                 use_eqcons_to_get_constant_trace=false, # use the equality constraints to get constant trace
-                                check_tol_each_iter=true) # check the tolerance at each iteration
+                                check_tol_each_iter=true ) # check the tolerance at each iteration
 ```
 
 See other examples in the [link](https://github.com/maihoanganh/ctpPOP/tree/main/examples).
@@ -91,7 +95,7 @@ For more details, please refer to:
 
 The following codes are to run the paper's benchmarks:
 ```ruby
-using SpectralPOP
+using ctpPOP
 
 ctpPOP.test_dense_POP_ball()
 ctpPOP.test_dense_POP_annulus()

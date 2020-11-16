@@ -463,7 +463,7 @@ function POP_TS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::V
     
 
       
-    @time opt_val=solve_POP_dense_CGAL(omega,a0_block,a_block,s,zeta,norm_a0,opnorm_a,ak,maxit=maxit,tol=tol,check_tol_each_iter=check_tol_each_iter)
+    @time opt_val=solve_POP_dense_CGAL(omega,a0_block,a_block,s,zeta,norm_a0,opnorm_a,ak,maxit=maxit,tol=tol)
     
               
        println("Total time:")

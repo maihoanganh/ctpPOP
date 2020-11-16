@@ -1,36 +1,20 @@
-function test_term_POP_box(nvarmin::Int64,nvarmax::Int64,eqcons::Bool)
-    k=2
-    t=1
+function test_TS_POP_box(nvarmin::Int64,nvarmax::Int64,k::Int64,t::Int64;have_eqcons::Bool=true)
     @polyvar x[1:1]
     f=Polynomial{true,Float64}(x[1]+0.0)
     g=Vector{Polynomial{true,Float64}}([])
     h=Vector{Polynomial{true,Float64}}([])
     
     for n in nvarmin:10:nvarmax
-        x,f,g,h=term_POP_box(n,k,eqcons=eqcons)
-        println()
-        println("--------------------------------------------------")
-        println()
-        POP_TS_CGAL(x,f,g,h,k,t;EigAlg="Arpack",maxit=1e10,tol=1e-3,UseEq=false)
-        println()
-        println("--------------------------------------------------")
-        println()
-        POP_TS_LMBM(x,f,g,h,k,t;EigAlg="Arpack",tol=1e-3,UseEq=false)
-        println()
-        println("--------------------------------------------------")
-        println()
-        try
-            @time tssos_first([[f];g;h],x,k,numeq=length(h),TS="block",quotient=false)
-        catch
-            println("Mosek is out of space!!!")
-        end
-        println()
-        println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-        println()
+        x,f,g,h=generate_TS_POP_box(n,have_eqcons=have_eqcons)
+        println("Relaxation order: k=",k)
+        println("====================")
+        println("Sparse order: t=",t)
+        println("====================")
+        run_TS_POP(x,f,g,h,k,t)
     end
 end
     
-function term_POP_box(n::Int64,k::Int64;eqcons::Bool=false)
+function generate_TS_POP_box(n::Int64;have_eqcons::Bool=false)
  
     println("***Problem setting***")
     println("Number of variable: n=",n)
@@ -60,7 +44,7 @@ function term_POP_box(n::Int64,k::Int64;eqcons::Bool=false)
     println("Number of inequality constraints: m=",m)
     println("====================")
 
-    if eqcons
+    if have_eqcons
         l=ceil(Int64, n/7)
     else
         l=0
@@ -80,7 +64,6 @@ function term_POP_box(n::Int64,k::Int64;eqcons::Bool=false)
     println("Number of equality constraints: l=",l)
     println("====================")
 
-    println("Relaxed order: k=",k)
         
     return x,f,g,h
 end

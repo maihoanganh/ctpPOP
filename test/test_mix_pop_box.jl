@@ -1,43 +1,22 @@
-function test_mix_POP_box(n::Int64,umin::Int64,umax::Int64,eqcons::Bool)
-    k=2
-    t=1
-    
+function test_mix_POP_box(n::Int64,umin::Int64,umax::Int64,k::Int64,t::Int64;have_eqcons::Bool=true)
+
     @polyvar x[1:n]
     f=Polynomial{true,Float64}(x[1]+0.0)
     g=Vector{Polynomial{true,Float64}}([x[1]+0.0])
     h=Vector{Polynomial{true,Float64}}([x[1]+0.0])
     
-    n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=ctpPOP.get_info(x,f,g,h,sparse=true)
-    
     
     for u in umin:5:umax
-        @time begin
-        n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=mix_POP_box(n,u,k,eqcons=eqcons)
-        println("Preparation time:")
-        end
-        println()
-        println("--------------------------------------------------")
-        println()
-        POP_mix_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,t,EigAlg="Arpack",maxit=1e10,tol=1e-2,UseEq=false)
-        println()
-        println("--------------------------------------------------")
-        println()
-        POP_mix_LMBM(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,t,EigAlg="Arpack",tol=1e-3,UseEq=false)
-        println()
-        println("--------------------------------------------------")
-        println()
-        try
-            @time cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS="block",CTP=false)
-        catch
-            println("Mosek is out of space!!!")
-        end
-        println()
-        println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-        println()
+        x,f,g,h=generate_mix_POP_box(n,u,have_eqcons=have_eqcons)
+        println("Relaxation order: k=",k)
+        println("====================")
+        println("Sparse order: t=",k)
+        println("====================")
+        run_mix_POP(x,f,g,h,k,t)
     end
 end
     
-function mix_POP_box(n::Int64,u::Int64,k::Int64;eqcons::Bool=false)
+function generate_mix_POP_box(n::Int64,u::Int64;have_eqcons::Bool=false)
     
     println("***Problem setting***")
     println("Number of variable: n=",n)
@@ -68,7 +47,7 @@ function mix_POP_box(n::Int64,u::Int64,k::Int64;eqcons::Bool=false)
     println("Number of inequality constraints: m=",m)
     println("====================")
     
-    if eqcons
+    if have_eqcons
         l=ceil(Int64, n/7)
     else
         l=0
@@ -96,9 +75,8 @@ function mix_POP_box(n::Int64,u::Int64,k::Int64;eqcons::Bool=false)
     l=length(h)
     println("Number of equality constraints: l=",l)
     println("====================")
-    println("Relaxed order: k=",k)
-    println("====================")
+
 
         
-    return get_info(x,f,g,h,sparse=true)
+    return x,f,g,h
 end
