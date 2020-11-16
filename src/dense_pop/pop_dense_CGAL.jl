@@ -118,10 +118,6 @@ function model_POP_dense(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_
     
     v,sk,sk_g,s2k_g,sk_h,s2k_h,ak,P,Pg=get_constant_trace_dense(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace)
     
-    vecP=[P;vcat(Pg...)]
-    
-    println("  Condition number: c = ",norm(vecP)*norm(vecP.^-1))
-    
     s2k=size(v,2)
     
     sort_v=sortslices(v,dims=2)
