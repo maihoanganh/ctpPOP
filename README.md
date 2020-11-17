@@ -9,17 +9,20 @@ Case 1: Annulus constraints on subsets of variables: **Ui >= ||x(Ti)||^2 >= Li**
 
 Case 2: Simlex constraints: **xi >= 0, 1 - x1 -...- xn >= 0**.
 
-- The main idea of SpectralPOP is to solve the Moment-SOS relaxation of the form:
+- The main idea of ctpPOP is to solve the Moment-SOS relaxation of the form:
 
 **v = inf_X { <C,X> : X is psd, AX = b },**
 
-which has constant trace property:
+which has constant trace property (CTP):
 
 **AX = b => trace(X) = a,**
 
 by using Conditional gradient-based augmented Lagrangian (CGAL) and Limited memory bundle method (LMBM).
 
 - Although possibly slower than the other method on the sparse POPs, ctpPOP is much more robust on the dense ones.
+
+- ctpPOP combines CTP with term sparity (TS), correlative sparsity (CS) and correlative sparsity-term sparsity (CS-TS) to avoid memory issue of the large-scale SDP relaxations for POPs.
+
 
 # Required softwares
 ctpPOP has been implemented on a desktop compute with the following softwares:
@@ -85,7 +88,6 @@ opt_val=ctpPOP.POP_dense_CGAL(  n, # the number of variables
 ```
 
 See other examples in the [link](https://github.com/maihoanganh/ctpPOP/tree/main/examples).
-
 
 
 # References
