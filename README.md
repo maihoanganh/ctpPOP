@@ -129,4 +129,6 @@ ctpPOP.test_mix_POP_ball(1000,11,31,2,1,have_eqcons=true) # Table 21
 ctpPOP.test_mix_POP_box(1000,11,31,2,1,have_eqcons=false) # Table 22
 ctpPOP.test_mix_POP_box(1000,11,31,2,1,have_eqcons=true) # Table 23
 
+ctpPOP.test_comparison_dense_POP_ball(10,70,2,have_eqcons=true) # Table 24
+
 ```
