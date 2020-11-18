@@ -56,7 +56,7 @@ using DynamicPolynomials
 f=x[1]^2+0.5*x[1]*x[2]-0.25*x[2]^2+0.75*x[1]-0.3*x[2] # the objective polynomial to minimize
 
 g=[1.0-sum(x.^2)] # the inequality constraints
-h=[R-sum(x.^2);(x[1]-1.0)*x[2]] # the equality constraints
+h=[(x[1]-1.0)*x[2]] # the equality constraints
 
 k=2 # relaxation order
 
