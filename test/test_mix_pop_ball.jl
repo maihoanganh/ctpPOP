@@ -7,7 +7,7 @@ function run_mix_POP(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vec
     println()
     println("**CTP+CGAL**")
     POP_mix_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,t,
-                     maxit=Int64(1e6),tol=1e-3,
+                     maxit=Int64(1e6),tol=1e-2,
                      use_eqcons_to_get_constant_trace=false,
                      check_tol_each_iter=true)
     println()
@@ -15,7 +15,7 @@ function run_mix_POP(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vec
     println()
     println("**CTP+LMBM**")
     POP_mix_LMBM(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,t,
-                     tol=1e-3,use_eqcons_to_get_constant_trace=false)
+                     tol=1e-2,use_eqcons_to_get_constant_trace=false)
     println()
     println("--------------------------------------------------")
     println()
