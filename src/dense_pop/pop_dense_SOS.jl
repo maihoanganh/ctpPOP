@@ -1,6 +1,5 @@
 function POP_dense_SOS(x::Vector{PolyVar{true}},f::Polynomial{true},g::Vector{Polynomial{true,Float64}},h::Vector{Polynomial{true,Float64}},k::Int64;tol::Float64=1e-5,solver="Mosek")
 @time begin
-    println("**SumOfSquares+Mosek:")
     n=length(x)
     l_g=length(g)
     l_h=length(h)

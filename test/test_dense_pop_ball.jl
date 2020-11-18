@@ -19,6 +19,7 @@ function run_dense_POP(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::V
     println()
     println("--------------------------------------------------")
     println()
+    println("**SOS+Mosek**")
     try
         POP_dense_SOS(x,f,g,h,k,tol=1e-2)
     catch
