@@ -137,9 +137,7 @@ function model_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g
     a_len+=1
     
     
-    
     a_val,a0,norm_a0,opnorm_a=rescale_dense(a_ind1,a_ind2,a_val,a_len,a0,zeta)
-    
     
     
     Ind=Vector{Vector{Vector{UInt64}}}(undef,p)

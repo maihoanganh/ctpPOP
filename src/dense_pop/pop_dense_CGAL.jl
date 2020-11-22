@@ -380,8 +380,13 @@ end
 
 
 function SmallEig_dense(mat::Matrix{Float64},s::UInt64)
+    try
        @fastmath @inbounds E=eigs(mat,nev = 1,which=:SR,tol=1e-2) 
        return E[1][1],E[2][:,1]
+    catch
+       @fastmath @inbounds E=eigen(Symmetric(mat),1:1)
+       return E.values[1],E.vectors[:,1]
+    end
 end
 
 function getmat_dense(vec::Adjoint{Float64,Array{Float64,1}},sk::UInt64)

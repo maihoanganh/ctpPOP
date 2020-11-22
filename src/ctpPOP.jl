@@ -59,13 +59,7 @@ include("../test/test_mix_pop_box.jl")
 include("../test/test_comparison_COSMO_dense_pop_ball.jl")
 
 #OPF problems
-include("../test/opf_test/test_opf_case3_lmbd.jl")
-include("../test/opf_test/test_opf_case5_pjm.jl")
-include("../test/opf_test/test_opf_case2312_goc.jl")
-include("../test/opf_test/test_opf_case1354_pegase.jl")
-include("../test/opf_test/test_opf_case14_ieee.jl")
-include("../test/opf_test/test_opf_case89_pegase.jl")
-include("../test/opf_test/test_opf_case39_epri.jl")
+include("../test/opf_test/test_opf_problems.jl")
 end
 
 
