@@ -2,7 +2,7 @@ module ctpPOP
 
 using Libdl, Printf, Compat
 
-using DynamicPolynomials, LinearAlgebra, MosekTools, SparseArrays, JuMP, Arpack, SumOfSquares, OSQP, LightGraphs, PolyPowerModels, TSSOS, COSMO, PowerModels, Ipopt
+using DynamicPolynomials, LinearAlgebra, MosekTools, SparseArrays, JuMP, Arpack, SumOfSquares, LightGraphs, PolyPowerModels, TSSOS, COSMO, PowerModels, Ipopt
 
 
 #export CTP_POP, ASC_PolySys
