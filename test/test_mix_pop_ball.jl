@@ -22,7 +22,7 @@ function run_mix_POP(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vec
     try
         println("**CS-TS+Mosek**")
         @time begin
-            ~,~,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS="block",CTP=false);
+            ~,~,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS="block");
             for j in 1:t-1
                 ~,~,data=cs_tssos_higher!(data,TS="block");
             end

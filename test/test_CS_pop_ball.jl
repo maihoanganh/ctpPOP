@@ -21,7 +21,7 @@ function run_CS_POP(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vect
     println()
     try
         println("**CS+Mosek**")
-        @time opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS=false,CTP=false);
+        @time opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS=false);
     catch
         println("Mosek is out of space!!!")
     end

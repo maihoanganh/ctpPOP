@@ -13,8 +13,14 @@ function run_comparison_dense_POP(x::Vector{PolyVar{true}},f::Polynomial{true,Fl
     println()
     println("--------------------------------------------------")
     println()
-    println("**Ipopt**")
-    POP_NLP(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f)
+    #println("**Ipopt**")
+    #POP_NLP(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f)
+    println("**SOS+Mosek**")
+    try
+        POP_dense_SOS(x,f,g,h,k,tol=1e-2)
+    catch
+        println("Mosek is out of space!!!")
+    end
     println()
     println("--------------------------------------------------")
     println()
