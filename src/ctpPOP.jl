@@ -2,7 +2,7 @@ module ctpPOP
 
 using Libdl, Printf, Compat
 
-using DynamicPolynomials, LinearAlgebra, MosekTools, SparseArrays, JuMP, Arpack, SumOfSquares, LightGraphs, PolyPowerModels, TSSOS, COSMO, PowerModels, Ipopt
+using DynamicPolynomials, LinearAlgebra, MosekTools, SparseArrays, JuMP, Arpack, SumOfSquares, LightGraphs, PolyPowerModels, TSSOS, COSMO, PowerModels#, Ipopt
 
 
 #export CTP_POP, ASC_PolySys
@@ -13,7 +13,7 @@ include("../deps/LMBM/deps.jl")
 include("../deps/LMBM/LMBM.jl")
 
 # src
-include("./pop_NLP.jl")
+#include("./pop_NLP.jl")
 include("./pop_opf.jl")
 
 include("./dense_pop/basicfuncs.jl")
@@ -56,7 +56,7 @@ include("../test/test_TS_pop_box.jl")
 include("../test/test_mix_pop_ball.jl")
 include("../test/test_mix_pop_box.jl")
 
-include("../test/test_comparison_COSMO_dense_pop_ball.jl")
+#include("../test/test_comparison_COSMO_dense_pop_ball.jl")
 
 #OPF problems
 include("../test/opf_test/test_opf_problems.jl")

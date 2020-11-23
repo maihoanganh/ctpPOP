@@ -24,12 +24,12 @@ function run_OPF(data::Dict{String,Any})
 
    k,t,n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=get_poly_OPF(data)
 
-    @time POP_NLP(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,set_initial_point_opf=true)
+    #@time POP_NLP(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,set_initial_point_opf=true)
     
     println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
     println("Shor's relaxation:")
     @time begin
-    opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,1,[dg;dh],numeq=l,CS="MD",TS="block",CTP=false);
+    opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,1,[dg;dh],numeq=l,CS="MD",TS="block");
     for j in 1:t-1
         opt,sol,data=cs_tssos_higher!(data,TS="block");
     end
@@ -44,7 +44,7 @@ function run_OPF(data::Dict{String,Any})
     println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
     @time begin
-    opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS="block",CTP=false);
+    opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS="block");
     for j in 1:t-1
         opt,sol,data=cs_tssos_higher!(data,TS="block");
     end
@@ -56,7 +56,7 @@ end
 
 
 function test_OPF_problem_case3_lmbd()
-    data = PowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/ctpPOP/ctpPOP/test/opf_test/pglib_opf_case3_lmbd.m")
+    data = PowerModels.parse_file("../test/opf_test/pglib_opf_case3_lmbd.m")
     
     run_OPF(data)
 
@@ -65,7 +65,7 @@ function test_OPF_problem_case3_lmbd()
 end
 
 function test_OPF_problem_case89_pegase__api()
-    data = PowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/ctpPOP/ctpPOP/test/opf_test/pglib_opf_case89_pegase__api.m")
+    data = PowerModels.parse_file("../test/opf_test/pglib_opf_case89_pegase__api.m")
     
     run_OPF(data)
 
