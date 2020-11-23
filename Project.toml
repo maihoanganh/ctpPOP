@@ -1,5 +1,5 @@
-name = "SpectralPOP"
-uuid = "415c37b2-6a0e-4863-82df-769ee4ae9c47"
+name = "ctpPOP"
+uuid = "8dd00c7b-d197-4c04-bcb1-2ef5c20236b2"
 authors = ["Ngoc Hoang Anh Mai <maihoanganh6@gmail.com>"]
 version = "0.1.0"
 
