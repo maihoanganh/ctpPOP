@@ -102,8 +102,8 @@ using ctpPOP
 ctpPOP.test_dense_POP_ball(10,100,2,have_eqcons=false) # Table 4
 ctpPOP.test_dense_POP_ball(10,70,2,have_eqcons=true) # Table 5
 
-ctpPOP.test_dense_POP_annulus(10,90,have_eqcons=false) # Table 6
-ctpPOP.test_dense_POP_annulus(10,70,have_eqcons=true) # Table 7
+ctpPOP.test_dense_POP_annulus(10,90,2,have_eqcons=false) # Table 6
+ctpPOP.test_dense_POP_annulus(10,70,2,have_eqcons=true) # Table 7
 
 ctpPOP.test_dense_POP_box(10,70,2,have_eqcons=false) # Table 8
 ctpPOP.test_dense_POP_box(10,50,2,have_eqcons=true) # Table 9
