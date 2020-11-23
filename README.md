@@ -100,7 +100,7 @@ The following codes are to run the paper's benchmarks:
 using ctpPOP
 
 ctpPOP.test_dense_POP_ball(10,100,2,have_eqcons=false) # Table 4
-ctpPOP.test_dense_POP_ball(10,80,2,have_eqcons=true) # Table 5
+ctpPOP.test_dense_POP_ball(10,70,2,have_eqcons=true) # Table 5
 
 ctpPOP.test_dense_POP_annulus(10,90,have_eqcons=false) # Table 6
 ctpPOP.test_dense_POP_annulus(10,70,have_eqcons=true) # Table 7
@@ -108,27 +108,27 @@ ctpPOP.test_dense_POP_annulus(10,70,have_eqcons=true) # Table 7
 ctpPOP.test_dense_POP_box(10,70,2,have_eqcons=false) # Table 8
 ctpPOP.test_dense_POP_box(10,50,2,have_eqcons=true) # Table 9
 
-ctpPOP.test_dense_POP_simplex(10,70,2,have_eqcons=false) # Table 10
+ctpPOP.test_dense_POP_simplex(10,50,2,have_eqcons=false) # Table 10
 ctpPOP.test_dense_POP_simplex(10,70,2,have_eqcons=true) # Table 11
 
-ctpPOP.test_TS_POP_ball(10,50,2,1,have_eqcons=false) # Table 12
-ctpPOP.test_TS_POP_ball(10,50,2,1,have_eqcons=true) # Table 13
+ctpPOP.test_TS_POP_ball(10,80,2,1,have_eqcons=false) # Table 12
+ctpPOP.test_TS_POP_ball(10,60,2,1,have_eqcons=true) # Table 13
 
-ctpPOP.test_TS_POP_box(10,50,2,1,have_eqcons=false) # Table 14
+ctpPOP.test_TS_POP_box(10,60,2,1,have_eqcons=false) # Table 14
 ctpPOP.test_TS_POP_box(10,50,2,1,have_eqcons=true) # Table 15
 
-ctpPOP.test_CS_POP_ball(1000,11,31,2,have_eqcons=false) # Table 16
-ctpPOP.test_CS_POP_ball(1000,11,31,2,have_eqcons=true) # Table 17
+ctpPOP.test_CS_POP_ball(1000,11,41,2,have_eqcons=false) # Table 16
+ctpPOP.test_CS_POP_ball(1000,11,36,2,have_eqcons=true) # Table 17
 
-ctpPOP.test_CS_POP_box(1000,11,31,2,have_eqcons=false) # Table 18
-ctpPOP.test_CS_POP_box(1000,11,31,2,have_eqcons=true) # Table 19
+ctpPOP.test_CS_POP_box(1000,11,26,2,have_eqcons=false) # Table 18
+ctpPOP.test_CS_POP_box(1000,11,26,2,have_eqcons=true) # Table 19
 
-ctpPOP.test_mix_POP_ball(1000,11,31,2,1,have_eqcons=false) # Table 20
-ctpPOP.test_mix_POP_ball(1000,11,31,2,1,have_eqcons=true) # Table 21
+ctpPOP.test_mix_POP_ball(1000,11,26,2,1,have_eqcons=false) # Table 20
+ctpPOP.test_mix_POP_ball(1000,11,26,2,1,have_eqcons=true) # Table 21
 
-ctpPOP.test_mix_POP_box(1000,11,31,2,1,have_eqcons=false) # Table 22
-ctpPOP.test_mix_POP_box(1000,11,31,2,1,have_eqcons=true) # Table 23
+ctpPOP.test_mix_POP_box(1000,11,26,2,1,have_eqcons=false) # Table 22
+ctpPOP.test_mix_POP_box(1000,11,26,2,1,have_eqcons=true) # Table 23
 
-ctpPOP.test_comparison_dense_POP_ball(10,70,2,have_eqcons=true) # Table 24
+
 
 ```
