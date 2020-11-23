@@ -1,11 +1,11 @@
-function POP_NLP(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f;set_initial_point_opf=false)
+function POP_NLP(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f)#;set_initial_point_opf=false)
     @time begin
     model = Model(with_optimizer(Ipopt.Optimizer))
     @variable(model, x[1:n])
 
-    if set_initial_point_opf
+    #=if set_initial_point_opf
         set_start_value.(x[1:l], ones(Int64,l))
-    end
+        end=#
 
     function get_func(x,lmon_f,supp_f,coe_f)
         f=0

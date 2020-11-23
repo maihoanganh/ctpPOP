@@ -56,7 +56,7 @@ end
 
 
 function test_OPF_problem_case3_lmbd()
-    data = PowerModels.parse_file(".../test/opf_test/pglib_opf_case3_lmbd.m")
+    data = PowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/ctpPOP/ctpPOP/test/opf_test/pglib_opf_case3_lmbd.m")
     
     run_OPF(data)
 
