@@ -131,7 +131,15 @@ ctpPOP.test_mix_POP_box(1000,11,26,2,1,have_eqcons=true) # Table 23
 
 ctpPOP.test_comparison_dense_POP_ball(10,60,2,have_eqcons=true) # comparison between CGAL and COSMO
 
-ctpPOP.test_OPF_problem_case89_pegase__api() # OPF problems with the second order relaxation that Mosek cannot solve
+# Comparison of CGAL and Mosek on the second order relaxation of classical OPF problem
+
+using PowerModels
+
+data = PowerModels.parse_file("/home/hoanganh/Desktop/math-topics/ctpPOP/codes/ctpPOP/ctpPOP/src/pglib_opf_case89_pegase__api.m")
+# change another directory on your computer
+# "pglib_opf_case89_pegase__api.m" is taken from https://github.com/power-grid-lib/pglib-opf/tree/master/api
+
+ctpPOP.run_OPF(data)
 
 
 

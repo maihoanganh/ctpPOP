@@ -59,25 +59,7 @@ include("../test/test_mix_pop_box.jl")
 include("../test/test_comparison_COSMO_dense_pop_ball.jl")
 
 #OPF problems
-#include("../test/opf_test/test_opf_problems.jl")
-
-function test_OPF_problem_case3_lmbd()
-    data = PowerModels.parse_file("./pglib_opf_case3_lmbd.m")
-    
-    run_OPF(data)
-
-    println("====================")
-    
-end
-
-function test_OPF_problem_case89_pegase__api()
-    data = PowerModels.parse_file("./pglib_opf_case89_pegase__api.m")
-    
-    run_OPF(data)
-
-    println("====================")
-    
-end
+include("../test/test_opf_problems.jl")
 
 end
 
