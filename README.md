@@ -33,15 +33,20 @@ The following sofwares are used for comparison purposes:
 - [Mosek 9.1](https://www.mosek.com)
 - [COSMO](https://github.com/oxfordcontrol/COSMO.jl)
 
-
-# Remark
-- LMBM is only supported on Ubuntu with Fortran 2018.
+You should installe [TSSOS](https://github.com/wangjie212/TSSOS) and [PolyPowerModels](https://github.com/tweisser/PolyPowerModels) by the following comments before installing ctpPOP:
+```ruby
+pkg> add https://github.com/wangjie212/TSSOS
+Pkg> add https://github.com/tweisser/PolyPowerModels.git
+```
 
 # Installation
 - To use ctpPOP in Julia, run
 ```ruby
 Pkg> add https://github.com/maihoanganh/ctpPOP.git
 ```
+
+# Remark
+- LMBM is only supported on Ubuntu with Fortran 2018.
 
 # Usage
 The following examples briefly guide to use ctpPOP:
