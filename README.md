@@ -33,7 +33,7 @@ The following sofwares are used for comparison purposes:
 - [Mosek 9.1](https://www.mosek.com)
 - [COSMO](https://github.com/oxfordcontrol/COSMO.jl)
 
-You should install [TSSOS](https://github.com/wangjie212/TSSOS) and [PolyPowerModels](https://github.com/tweisser/PolyPowerModels) with the following commands before installing ctpPOP:
+Before installing ctpPOP, you should install [TSSOS](https://github.com/wangjie212/TSSOS) and [PolyPowerModels](https://github.com/tweisser/PolyPowerModels) with the following commands:
 ```ruby
 Pkg> add https://github.com/wangjie212/TSSOS
 Pkg> add https://github.com/tweisser/PolyPowerModels.git
