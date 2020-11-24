@@ -35,8 +35,8 @@ The following sofwares are used for comparison purposes:
 
 You should installe [TSSOS](https://github.com/wangjie212/TSSOS) and [PolyPowerModels](https://github.com/tweisser/PolyPowerModels) by the following comments before installing ctpPOP:
 ```ruby
-pkg> add https://github.com/wangjie212/TSSOS
-pkg> add https://github.com/tweisser/PolyPowerModels.git
+Pkg> add https://github.com/wangjie212/TSSOS
+Pkg> add https://github.com/tweisser/PolyPowerModels.git
 ```
 
 # Installation
