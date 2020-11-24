@@ -29,7 +29,7 @@ function run_OPF(data::Dict{String,Any})
     #@time POP_NLP(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,set_initial_point_opf=true)
     
     println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-    println("Shor's relaxation:")
+    println("Shor's relaxation: Mosek")
     @time begin
     opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,1,[dg;dh],numeq=l,CS="MD",TS="block");
     for j in 1:t-1
@@ -38,13 +38,13 @@ function run_OPF(data::Dict{String,Any})
     end
 
     println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-   
+    println("2nd order relaxation: CGAL")
 
     POP_mix_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,t,
                  maxit=Int64(1e10),tol=1e-2,use_eqcons_to_get_constant_trace=false,check_tol_each_iter=false)
     
     println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-
+    println("2nd order relaxation: Mosek")
     @time begin
     opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS="block");
     for j in 1:t-1
