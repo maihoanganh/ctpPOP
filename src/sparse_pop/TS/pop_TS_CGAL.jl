@@ -172,8 +172,11 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
     omega=Int64(lblock_g0+sum(lblock_g))
     
     println("  Number of blocks: omega=",omega)
-    println("  Size of the largest block: s^max=",maximum([maximum(lt_block_g0);maximum(maximum(lt_block_g[i]) for i in 1:m)]))
-    
+    if m>0
+        println("  Size of the largest block: s^max=",maximum([maximum(lt_block_g0);maximum(maximum(lt_block_g[i]) for i in 1:m)]))
+    else
+        println("  Size of the largest block: s^max=",maximum([maximum(lt_block_g0)]))
+    end
    
     
     Order(alpha)=bfind(Usupp,lUsupp,alpha,n)
