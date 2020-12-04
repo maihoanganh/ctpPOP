@@ -47,6 +47,7 @@ Pkg> add https://github.com/maihoanganh/ctpPOP.git
 
 # Remark
 - LMBM is only supported on Ubuntu with Fortran 2018.
+- A Windows version of ctpPOP, namely [ctpPOP2](https://github.com/maihoanganh/ctpPOP2), can be found in this [link](https://github.com/maihoanganh/ctpPOP2).
 
 # Usage
 The following examples briefly guide to use ctpPOP:
