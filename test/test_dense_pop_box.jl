@@ -1,8 +1,8 @@
 function test_dense_POP_box(nvarmin::Int64,nvarmax::Int64,k::Int64;have_eqcons::Bool=true)
-    @polyvar x[1:1]
-    f=Polynomial{true,Float64}(x[1]+0.0)
-    g=Vector{Polynomial{true,Float64}}([])
-    h=Vector{Polynomial{true,Float64}}([])
+    @ncpolyvar x[1:1]
+    f=Polynomial{false,Float64}(x[1]+0.0)
+    g=Vector{Polynomial{false,Float64}}([])
+    h=Vector{Polynomial{false,Float64}}([])
     
     for n in nvarmin:10:nvarmax
         x,f,g,h=generate_dense_POP_box(n,have_eqcons=have_eqcons)
@@ -18,14 +18,26 @@ function generate_dense_POP_box(n::Int64;have_eqcons::Bool=false)
     println("Number of variable: n=",n)
     println("====================")
 
-    @polyvar x[1:n]# variables
+    @ncpolyvar x[1:n]# variables
 
+    function star_algebra(mom)
+        if mom==1
+            return mom
+        else
+            ind=mom.z .>0
+            vars=mom.vars[ind]
+            exp=mom.z[ind]
+            return prod(vars[i]^exp[i] for i in length(exp):-1:1)
+        end
+    end
     function generate_random_poly(v)
         c=2*rand(Float64,length(v)).-1
         return c'*v
     end
     # random quadratic objective function f
     v=reverse(monomials(x,0:2))
+    v+=star_algebra.(v)
+    v=v./2
     f=generate_random_poly(v)
 
 
@@ -48,7 +60,7 @@ function generate_dense_POP_box(n::Int64;have_eqcons::Bool=false)
         l=0
     end
 
-    h=Vector{Polynomial{true,Float64}}(undef,l)
+    h=Vector{Polynomial{false,Float64}}(undef,l)
     randx=[2*rand(length(T[j])).-1 for j in 1:m]# create a feasible solution
     randx=[sqrt(R[j])*rand(1)[1]*randx[j]/norm(randx[j]) for j in 1:m]
     randx=vcat(randx...)

@@ -1,9 +1,9 @@
 function initial_mix_CGAL(n::Int64,m::Int64,l::Int64,k::Int64,dg::Vector{Int64},dh::Vector{Int64})
 
-    v=get_basis(n,2*k)
-    s2k=size(v,2)
+    v=get_ncbasis(n,2*k)
+    s2k=length(v)
     
-    sk=binomial(k+n,n)
+    sk=numlet(n,k)
     sk_g=Vector{UInt64}(undef,m)
     sk_h=Vector{UInt64}(undef,l)
     s2k_g=Vector{UInt64}(undef,m)
@@ -14,26 +14,26 @@ function initial_mix_CGAL(n::Int64,m::Int64,l::Int64,k::Int64,dg::Vector{Int64},
     ceil0=Int64(0)
     for i in 1:m
         ceil0=ceil(Int64,dg[i]/2)
-        sk_g[i]=binomial(k-ceil0+n,n)
-        s2k_g[i]=binomial(2*(k-ceil0)+n,n)
+        sk_g[i]=numlet(n,k-ceil0)
+        s2k_g[i]=numlet(n,2*(k-ceil0))
     end
                     
     for i in 1:l
         ceil0=ceil(Int64,dh[i]/2)
-        sk_h[i]=binomial(k-ceil0+n,n)
-        s2k_h[i]=binomial(2*(k-ceil(Int64,dh[i]/2))+n,n)
+        sk_h[i]=numlet(n,k-ceil0)
+        s2k_h[i]=numlet(n,2*(k-ceil(Int64,dh[i]/2)))
     end
     return v,s2k,sk,sk_g,sk_h,s2k_g,s2k_h
 end
 
 
-function get_blocks_Cliq_mix_CGAL(k::Int64,n::Int64,m::Int64,l::Int64,Usupp::SparseMatrixCSC{UInt64,Int64},lmon_g::Vector{UInt64},lmon_h::Vector{UInt64},supp_g#=::Vector{SparseMatrixCSC{UInt64}}=#,supp_h#=::Vector{SparseMatrixCSC{UInt64}}=#,coe_g::Vector{Vector{Float64}},coe_h::Vector{Vector{Float64}},v::Matrix{UInt64},s2k::UInt64,sk::UInt64,sk_g::Vector{UInt64},sk_h::Vector{UInt64},s2k_g::Vector{UInt64},s2k_h::Vector{UInt64})
+function get_blocks_Cliq_mix_CGAL(k::Int64,n::Int64,m::Int64,l::Int64,Usupp::Vector{Vector{UInt64}},lmon_g::Vector{UInt64},lmon_h::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},supp_h::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},coe_h::Vector{Vector{Float64}},v::Vector{Vector{UInt64}},s2k::UInt64,sk::UInt64,sk_g::Vector{UInt64},sk_h::Vector{UInt64},s2k_g::Vector{UInt64},s2k_h::Vector{UInt64})
     
     #println(typeof(Usupp))
-    
-    Usupp=sortslices(Usupp,dims=2)
-    Usupp=unique(Usupp,dims=2)
-    lUsupp=size(Usupp,2)
+    Usupp=_sym_canon.(Usupp)
+    Usupp=unique(Usupp)
+    Usupp=sort(Usupp)
+    lUsupp=length(Usupp)
 
 
     block_g=Vector{Vector{Vector{UInt64}}}(undef,m)
@@ -55,7 +55,7 @@ function get_blocks_Cliq_mix_CGAL(k::Int64,n::Int64,m::Int64,l::Int64,Usupp::Spa
     
     graph=SimpleGraph(sk)
     for p in 1:sk, q in 1:p
-        if bfind(Usupp,lUsupp,v[:,p]+v[:,q],n)!=0
+        if ncbfind(Usupp,lUsupp,_sym_canon([v[p][end:-1:1];v[q]]))!=0
            add_edge!(graph,p,q)
         end
     end
@@ -69,7 +69,7 @@ function get_blocks_Cliq_mix_CGAL(k::Int64,n::Int64,m::Int64,l::Int64,Usupp::Spa
         for p in 1:sk_g[i]
             for q in 1:p
                 while y<=lmon_g[i]
-                    if bfind(Usupp,lUsupp,v[:,p]+v[:,q]+supp_g[i][:,y],n)!=0
+                    if ncbfind(Usupp,lUsupp,_sym_canon([v[p][end:-1:1];supp_g[i][y];v[q]]))!=0
                         break
                     else
                         y+=1
@@ -93,7 +93,7 @@ function get_blocks_Cliq_mix_CGAL(k::Int64,n::Int64,m::Int64,l::Int64,Usupp::Spa
         for p in 1:sk_h[i]
             for q in 1:p
                 while y<=lmon_h[i]
-                    if bfind(Usupp,lUsupp,v[:,p]+v[:,q]+supp_h[i][:,y],n)!=0
+                    if ncbfind(Usupp,lUsupp,_sym_canon([v[p][end:-1:1];supp_h[i][y];v[q]]))!=0
                         break
                     else
                         y+=1
@@ -109,23 +109,31 @@ function get_blocks_Cliq_mix_CGAL(k::Int64,n::Int64,m::Int64,l::Int64,Usupp::Spa
         lblock_h[i]=length(block_h[i])
         lt_block_h[i]=[length(block_h[i][j]) for j in 1:lblock_h[i]]
     end
-
-    Usupp=zeros(UInt64,n,Int64(0.5*sum(lt_block_g0[j]*(lt_block_g0[j]+1) for j in 1:lblock_g0)))
+    
+    lUsupp=Int64(0.5*sum(lt_block_g0[j]*(lt_block_g0[j]+1) for j in 1:lblock_g0))
+    if m>0
+        lUsupp+=Int64(0.5*sum(lmon_g[i]*lt_block_g[i][j]*(lt_block_g[i][j]+1) for i in 1:m for j in 1:lblock_g[i]))
+    end
+    if l>0
+        lUsupp+=Int64(0.5*sum(lmon_h[i]*lt_block_h[i][j]*(lt_block_h[i][j]+1) for i in 1:l for j in 1:lblock_h[i]))
+    end
+    Usupp=Vector{Vector{UInt64}}(undef,lUsupp)
 
     t_supp=1
     for j in 1:lblock_g0
         for p in 1:lt_block_g0[j], q in 1:p
-            Usupp[:,t_supp]=v[:,block_g0[j][p]]+v[:,block_g0[j][q]]
+            Usupp[t_supp]=_sym_canon([v[block_g0[j][p]][end:-1:1];v[block_g0[j][q]]])
             t_supp+=1
         end
     end
     
-    #=
+    
    for i in 1:m
         for j in 1:lblock_g[i]
             for p in 1:lt_block_g[i][j], q in 1:p
                 for z in 1:lmon_g[i]
-                    Usupp=[Usupp v[:,block_g[i][j][p]]+v[:,block_g[i][j][q]]+supp_g[i][:,z]]
+                    Usupp[t_supp]=_sym_canon([v[block_g[i][j][p]][end:-1:1];supp_g[i][z];v[block_g[i][j][q]]])
+                    t_supp+=1
                 end
             end
         end
@@ -134,15 +142,16 @@ function get_blocks_Cliq_mix_CGAL(k::Int64,n::Int64,m::Int64,l::Int64,Usupp::Spa
         for j in 1:lblock_h[i]
             for p in 1:lt_block_h[i][j], q in 1:p
                 for z in 1:lmon_h[i]
-                    Usupp=[Usupp v[:,block_h[i][j][p]]+v[:,block_h[i][j][q]]+supp_h[i][:,z]]
+                    Usupp[t_supp]=_sym_canon([v[block_h[i][j][p]][end:-1:1];supp_h[i][z];v[block_h[i][j][q]]])
+                    t_supp+=1
                 end
             end
         end
     end
-      =#
+     
     
-    Usupp=unique(Usupp,dims=2)
-    lUsupp=size(Usupp,2)
+    Usupp=unique(Usupp)
+    lUsupp=length(Usupp)
 
     
     return Usupp,lUsupp,block_g0,block_g,block_h,lblock_g0,lblock_g,lblock_h,lt_block_g0,lt_block_g,lt_block_h
@@ -153,47 +162,45 @@ end
 
 
 
-function get_constant_trace_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{SparseMatrixCSC{UInt64}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{SparseMatrixCSC{UInt64}},coe_h::Vector{Vector{Float64}},dg::Vector{Int64},dh::Vector{Int64},v::Matrix{UInt64},sk::UInt64,sk_g::Vector{UInt64},s2k_g::Vector{UInt64},s2k_h::Vector{UInt64};use_eqcons_to_get_constant_trace::Bool=true)
+function get_constant_trace_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},dg::Vector{Int64},dh::Vector{Int64},v::Vector{Vector{UInt64}},sk::UInt64,sk_g::Vector{UInt64},s2k_g::Vector{UInt64},s2k_h::Vector{UInt64};use_eqcons_to_get_constant_trace::Bool=true)
     
     
     
     lV=sk
-    if m>0
-        lV+=sum(@fastmath @inbounds sk_g[i]*lmon_g[i] for i in 1:m)
+    
+    if m!=0
+        lV+=sum(sk_g[i]*lmon_g[i] for i in 1:m)
     end
     if use_eqcons_to_get_constant_trace
-        if l>0
-            lV+=sum(@fastmath @inbounds lmon_h[i]*s2k_h[i] for i in 1:l)
+        if l!=0
+            lV+=sum(lmon_h[i]*s2k_h[i] for i in 1:l)
         end
     end
-
-
-    V=Matrix{UInt64}(undef,n,lV)
-    V[:,1:sk]=2*v[:,1:sk]
+    V=[Vector{UInt64}([]) for j in 1:lV]
+    V[1:sk]=[_sym_canon([v[i][end:-1:1]; v[i]]) for i in 1:sk]
     t=sk+1
-    @fastmath @inbounds for i in 1:m
-        @fastmath @inbounds for r in 1:lmon_g[i]
-            @fastmath @inbounds for j in 1:sk_g[i]
-                V[:,t]=2*v[:,j]+supp_g[i][:,r]
+    @fastmath @inbounds @simd for i in 1:m
+        @fastmath @inbounds @simd for r in 1:lmon_g[i]
+            @fastmath @inbounds @simd for j in 1:sk_g[i]
+                V[t]=_sym_canon([v[j][end:-1:1]; supp_g[i][r]; v[j]])
                 t+=1
             end
         end
     end
-    if use_eqcons_to_get_constant_trace
-        @fastmath @inbounds for i in 1:l
-            @fastmath @inbounds for r in 1:lmon_h[i]
-                @fastmath @inbounds for j in 1:s2k_h[i]
-                    V[:,t]=v[:,j]+supp_h[i][:,r]
+    if use_eqcons_to_get_constant_trace               
+        @fastmath @inbounds @simd for i in 1:l
+            @fastmath @inbounds @simd for r in 1:lmon_h[i]
+                @fastmath @inbounds for j in 1:sk_h[i], w in j:sk_h[i]
+                    V[t]=_sym_canon([v[j][end:-1:1]; supp_h[i][r]; v[w]])
                     t+=1
                 end
             end
-        end   
+        end 
     end
-    V=unique(V,dims=2)
-    V=sortslices(V,dims=2)
-    lV=size(V,2)
+    V=unique(V)
+    V=sort(V)
     
-  
+    lV=length(V)
                                     
     model=JuMP.Model(with_optimizer(Mosek.Optimizer, QUIET=true))
     cons=[AffExpr(0) for i in 1:lV]
@@ -203,43 +210,41 @@ function get_constant_trace_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vec
     
 
     
-    for j in 1:sk
-        @inbounds add_to_expression!(cons[bfind(V,lV,2*v[:,j],n)],p0[j])
+    @fastmath @inbounds @simd for j in 1:sk
+        add_to_expression!(cons[ncbfind(V,lV,_sym_canon([v[j][end:-1:1]; v[j]]))],p0[j])
     end
 
 
-    for i in 1:m
-        
-        for j in 1:sk_g[i]
-            for r in 1:lmon_g[i]
-                @inbounds add_to_expression!(cons[bfind(V,lV,2*v[:,j]+supp_g[i][:,r],n)],p[i][j]*coe_g[i][r])
-            end
-        end
-    end
-
-    if use_eqcons_to_get_constant_trace
-        q=[@variable(model, [1:s2k_h[i]]) for i in 1:l]
-        for i in 1:l
-            
-            for j in 1:s2k_h[i]
-                for r in 1:lmon_h[i]
-                    @inbounds add_to_expression!(cons[bfind(V,lV,v[:,j]+supp_h[i][:,r],n)],q[i][j]*coe_h[i][r])
-                end
+    @fastmath @inbounds @simd for i in 1:m
+        @fastmath @inbounds @simd for j in 1:sk_g[i]
+            @fastmath @inbounds @simd for r in 1:lmon_g[i]
+                add_to_expression!(cons[ncbfind(V,lV,_sym_canon([v[j][end:-1:1]; supp_g[i][r]; v[j]]))],p[i][j]*coe_g[i][r])
             end
         end
     end
     
+    if use_eqcons_to_get_constant_trace
+        q=[@variable(model, [1:Int64(sk_h[i]*(sk_h[i]+1)/2)]) for i in 1:l]
+        t_q=1
+        @fastmath @inbounds @simd for i in 1:l
+            @fastmath @inbounds for j in 1:sk_h[i], w in j:sk_h[i]
+                @fastmath @inbounds @simd for r in 1:lmon_h[i]
+                    add_to_expression!(cons[ncbfind(V,lV,_sym_canon([v[j][end:-1:1]; supp_h[i][r]; v[w]]))],p[i][t_q]*coe_h[i][r])
+                    t_q+=1
+                end
+            end
+            t_q=1
+        end
+    end
     @constraint(model, cons[2:end].==0)
     @variable(model, lambda)
     @constraint(model, cons[1]==lambda)
     @objective(model, Min, lambda)
     optimize!(model)
                                     
-    
+    #println("  Computing constant trace status: ", termination_status(model))
                                     
     ak=value(lambda)
-    
-    #println("  Computing constant trace status: ", termination_status(model))
     #println("  Constant trace: ak = ",ak)
     
     P=sqrt.(value.(p0))
@@ -249,12 +254,13 @@ function get_constant_trace_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vec
 end
 
 
-function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::SparseMatrixCSC{UInt64,Int64},coe_f::Vector{Float64},lmon_g::Vector{UInt64},supp_g,coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h,coe_h::Vector{Vector{Float64}},dg::Vector{Int64},dh::Vector{Int64},mex_cliq::Vector{UInt64},lmex_cliq::Int64,v::Matrix{UInt64},Usupp::Matrix{UInt64},lUsupp::UInt64,block_g0::Vector{Vector{UInt64}},block_g::Vector{Vector{Vector{UInt64}}},block_h::Vector{Vector{Vector{UInt64}}},lblock_g0::UInt64,lblock_g::Vector{UInt64},lblock_h::Vector{UInt64},lt_block_g0::Vector{UInt64},lt_block_g::Vector{Vector{UInt64}},lt_block_h::Vector{Vector{UInt64}},sk::UInt64,sk_g::Vector{UInt64},sk_h::Vector{UInt64},s2k::UInt64,s2k_g::Vector{UInt64},s2k_h::Vector{UInt64};use_eqcons_to_get_constant_trace::Bool=true)
+function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Vector{Vector{UInt64}},coe_f::Vector{Float64},lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},dg::Vector{Int64},dh::Vector{Int64},mex_cliq::Vector{UInt64},lmex_cliq::Int64,v::Vector{Vector{UInt64}},Usupp::Vector{Vector{UInt64}},lUsupp::UInt64,block_g0::Vector{Vector{UInt64}},block_g::Vector{Vector{Vector{UInt64}}},block_h::Vector{Vector{Vector{UInt64}}},lblock_g0::UInt64,lblock_g::Vector{UInt64},lblock_h::Vector{UInt64},lt_block_g0::Vector{UInt64},lt_block_g::Vector{Vector{UInt64}},lt_block_h::Vector{Vector{UInt64}},sk::UInt64,sk_g::Vector{UInt64},sk_h::Vector{UInt64},s2k::UInt64,s2k_g::Vector{UInt64},s2k_h::Vector{UInt64};use_eqcons_to_get_constant_trace::Bool=true)
     
    
     ak,P,Pg=get_constant_trace_Cliq_mix_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,dg,dh,v,sk,sk_g,s2k_g,s2k_h,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace)
-                                                    
-    
+                      
+  
+
     omega=lblock_g0+sum(lblock_g)
     
     #=println("  Number of blocks: omega=",omega)
@@ -264,7 +270,9 @@ function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Sp
         println("  Size of the largest block: s^max=",maximum(lt_block_g0))
     end=#
     
-    Order(alpha)=bfind(Usupp,lUsupp,alpha,n)
+    
+    
+    
     
     w=[Int64(0.5*lt_block_g0[j]*(lt_block_g0[j]+1)) for j in 1:lblock_g0]
     w_g=[[@inbounds Int64(0.5*lt_block_g[i][j]*(lt_block_g[i][j]+1)) for j in 1:lblock_g[i]] for i in 1:m]
@@ -276,11 +284,22 @@ function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Sp
     
     
     d=u+sum(u_g)
+    
+    
+    
+    Usupp=Vector{Vector{UInt64}}(undef,u)
+    t_iter=1
+    for j in 1:lblock_g0
+        for p in 1:lt_block_g0[j], q in 1:p
+            @inbounds Usupp[t_iter]=_sym_canon([v[block_g0[j][p]][end:-1:1];v[block_g0[j][q]]])
+            t_iter+=1
+        end
+    end
+    Usupp=unique(Usupp)
+    Usupp=sort(Usupp)
+    lUsupp=length(Usupp) 
    
-    
-    
-    zeta=d-lUsupp
-    
+    Order(alpha)=ncbfind(Usupp,lUsupp,_sym_canon(alpha))
     
 
     IndM=[@inbounds Vector{Vector{Int64}}([]) for j in 1:lUsupp]
@@ -292,12 +311,16 @@ function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Sp
     a_ind2=Vector{UInt64}([])
     a_val=Vector{Float64}([])
     a_len=UInt64(0)
+                                    
+    a_ind1_=Vector{UInt64}([])
+    a_val_=Vector{Float64}([])
+    a_len_=UInt64(0)                                
     
     t_blo=0
     
     for j in 1:lblock_g0
         for p in 1:lt_block_g0[j], q in 1:p
-            @inbounds r=Order(v[:,block_g0[j][p]]+v[:,block_g0[j][q]])
+            @inbounds r=Order([v[block_g0[j][p]][end:-1:1];v[block_g0[j][q]]])
             @inbounds push!(IndM[r],[block_g0[j][p],block_g0[j][q]])
             @inbounds invIndeM[block_g0[j][p],block_g0[j][q]]=t_iter
             @inbounds t_iter+=1
@@ -312,6 +335,7 @@ function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Sp
     
     
     I=zeros(UInt64,2)
+    I_=zeros(UInt64,2)
             
     for r in 1:lUsupp
         if l_IndM[r]>1
@@ -335,29 +359,29 @@ function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Sp
     end
     
     
-    Usupp_g=Vector{Matrix{UInt64}}(undef,m)
+    Usupp_g=Vector{Vector{Vector{UInt64}}}(undef,m)
     lUsupp_g=zeros(UInt64,m)
 
     
     for i in 1:m     
-        Usupp_g[i]=zeros(UInt64,n,u_g[i])
+        Usupp_g[i]=Vector{Vector{UInt64}}(undef,u_g[i])
         t_iter=1
         for j in 1:lblock_g[i]
             for p in 1:lt_block_g[i][j], q in p:lt_block_g[i][j]
-                @inbounds Usupp_g[i][:,t_iter]=v[:,block_g[i][j][p]]+v[:,block_g[i][j][q]]
+                @inbounds Usupp_g[i][t_iter]=_sym_canon([v[block_g[i][j][p]];v[block_g[i][j][q]]])
                 t_iter+=1
             end
         end
+        Usupp_g[i]=unique(Usupp_g[i])
+        Usupp_g[i]=sort(Usupp_g[i])
         
-        Usupp_g[i]=sortslices(Usupp_g[i],dims=2)
-        Usupp_g[i]=unique(Usupp_g[i],dims=2)
-        lUsupp_g[i]=size(Usupp_g[i],2) 
+        lUsupp_g[i]=length(Usupp_g[i]) 
     end
    
     IndMg=[[Vector{Vector{Int64}}([]) for j in 1:lUsupp_g[i]] for i in 1:m]
     invIndeMg=[spzeros(UInt64,sk_g[i],sk_g[i]) for i in 1:m]
     t_Blo=u
- 
+    vec=spzeros(Float64,d)
  
     for i in 1:m
         r=UInt64(0)
@@ -366,7 +390,7 @@ function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Sp
         t_blo=0
         for j in 1:lblock_g[i]
             for p in 1:lt_block_g[i][j], q in 1:p
-                @inbounds r=bfind(Usupp_g[i],lUsupp_g[i],v[:,block_g[i][j][p]]+v[:,block_g[i][j][q]],n)
+                @inbounds r=ncbfind(Usupp_g[i],lUsupp_g[i],_sym_canon([v[block_g[i][j][p]][end:-1:1];v[block_g[i][j][q]]]))
                 @inbounds push!(IndMg[i][r],[block_g[i][j][p];block_g[i][j][q]])
                 @inbounds invIndeMg[i][p+t_blo,q+t_blo]=t_iter
                 t_iter+=1
@@ -402,73 +426,81 @@ function model_Cliq_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_f::Int64,supp_f::Sp
             
             
            
-            I=IndMg[i][rr][1]
-            push!(a_ind1,invIndeMg[i][I[1],I[2]]+t_Blo)
+            I_=IndMg[i][rr][1]
+            push!(a_ind1,invIndeMg[i][I_[1],I_[2]]+t_Blo)
             push!(a_ind2,t_a)
-            push!(a_val,-ak/Pg[i][I[1]]/Pg[i][I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1))
+            push!(a_val,-ak/Pg[i][I_[1]]/Pg[i][I_[2]]*((0.5*sqrt(2)-1)*(I_[2]<I_[1])+1))
             a_len+=1
             
             for p in 1:lmon_g[i]  
-                I=IndM[Order(supp_g[i][:,p]+Usupp_g[i][:,rr])][end]
-                push!(a_ind1,invIndeM[I[1],I[2]])
-                push!(a_ind2,t_a)
-                push!(a_val,coe_g[i][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1))
-                a_len+=1
+                I=IndM[Order([v[I_[1]][end:-1:1];supp_g[i][p];v[I_[2]]])][end]
+                vec[invIndeM[I[1],I[2]]]+=coe_g[i][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
+                
             end
-            t_a+=1
-            
+            a_ind1_,a_val_=findnz(vec)
+            a_len_=length(a_ind1_)
+            a_ind1=[a_ind1;a_ind1_]
+            a_val=[a_val;a_val_]
+            a_ind2=[a_ind2;t_a*ones(UInt64,a_len_)]
+            a_len+=a_len_
+            @inbounds t_a+=1
+            vec=spzeros(Float64,d)
          end
          t_Blo+=u_g[i]
     end
     
-    Usupp_h=Vector{Matrix{UInt64}}(undef,l)
+    Usupp_h=Vector{Vector{Vector{UInt64}}}(undef,l)
     lUsupp_h=zeros(UInt64,l)
     
     
     
     for i in 1:l
-        Usupp_h[i]=zeros(UInt64,n,Int(0.5*sum(lt_block_h[i][j]*(lt_block_h[i][j]+1) for j in 1:lblock_h[i])))
+        Usupp_h[i]=Vector{Vector{UInt64}}(undef,Int(0.5*sum(lt_block_h[i][j]*(lt_block_h[i][j]+1) for j in 1:lblock_h[i])))
         t_iter=1
         for j in 1:lblock_h[i]
             for p in 1:lt_block_h[i][j], q in p:lt_block_h[i][j]
-                @inbounds Usupp_h[i][:,t_iter]=v[:,block_h[i][j][p]]+v[:,block_h[i][j][q]]
+                @inbounds Usupp_h[i][t_iter]=_sym_canon([v[block_h[i][j][p]][end:-1:1];v[block_h[i][j][q]]])
                 t_iter+=1
             end
         end
-        Usupp_h[i]=sortslices(Usupp_h[i],dims=2)
-        Usupp_h[i]=unique(Usupp_h[i],dims=2)
-        lUsupp_h[i]=size(Usupp_h[i],2)
+        Usupp_h[i]=unique(Usupp_h[i])
+        Usupp_h[i]=sort(Usupp_h[i])
+        lUsupp_h[i]=length(Usupp_h[i])
     end
     
     sum_lUsupp_h=sum(lUsupp_h)
-    zeta+=sum_lUsupp_h
+    
     
     #println("  Number of equality trace constraints: zeta=",zeta)
     
     
     @simd for j in 1:l
         @simd for r in 1:lUsupp_h[j]
+            I_=IndM[Order(Usupp_h[j][r])][1]
             @simd for p in 1:lmon_h[j]
-                      I=IndM[Order(supp_h[j][:,p]+Usupp_h[j][:,r])][1]
-                      push!(a_ind1,invIndeM[I[1],I[2]])
-                      push!(a_ind2,t_a)
-                      push!(a_val,coe_h[j][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1))
-                      a_len+=1
-                
+                      I=IndM[Order([v[I_[1]][end:-1:1];supp_h[j][p];v[I_[2]]])][1]
+                      vec[invIndeM[I[1],I[2]]]+=coe_h[j][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
                    end
+                    a_ind1_,a_val_=findnz(vec)
+                    a_len_=length(a_ind1_)
+                    a_ind1=[a_ind1;a_ind1_]
+                    a_val=[a_val;a_val_]
+                    a_ind2=[a_ind2;t_a*ones(UInt64,a_len_)]
+                    a_len+=a_len_
                     @inbounds t_a+=1
+                    vec=spzeros(Float64,d)
                end       
     end 
    
-            
+    zeta=t_a-1
 
 
     a0=zeros(Float64,d)
     
     
     @simd for p in 1:lmon_f
-        I=IndM[Order(supp_f[:,p])][1]
-        a0[invIndeM[I[1],I[2]]]=coe_f[p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
+        I=IndM[Order(supp_f[p])][1]
+        a0[invIndeM[I[1],I[2]]]+=coe_f[p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
    end
     
     

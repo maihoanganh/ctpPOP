@@ -1,7 +1,14 @@
-function model_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{SparseMatrixCSC{UInt64}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{SparseMatrixCSC{UInt64}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::SparseMatrixCSC{UInt64},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64;use_eqcons_to_get_constant_trace::Bool=true)
+function model_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Vector{Vector{UInt64}},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64;use_eqcons_to_get_constant_trace::Bool=true, check_by_mosek=false)
 
+    function matsupp(supp,lmon)
+        mat=spzeros(UInt64,n,lmon)
+        for j in 1:lmon
+            mat[unique(supp[j]),j].=1
+        end
+        return mat
+    end
     
-    I,p,lI=clique_decomp(n,m+l,[dg;dh],[[supp_f];supp_g;supp_h],order=k,alg="MD",minimize=true)
+    I,p,lI=clique_decomp(n,m+l,[dg;dh],[[matsupp(supp_f,lmon_f)];[matsupp(supp_g[i],lmon_g[i]) for i in 1:m];[matsupp(supp_h[i],lmon_h[i]) for i in 1:l]],order=k,alg="MD",minimize=true)
     
     #J,lJ,~=get_indcons(m,supp_g,I,p,lI,assign="all")
     
@@ -23,6 +30,7 @@ function model_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g:
     lJ=[lposJ_in[j]+lposJ_out[j] for j in 1:p]
     
     
+    
     W,lW,~=get_indcons(l,supp_h,I,p,lI,assign="min")
     
     println("  Number of cliques: p=", p)
@@ -32,11 +40,12 @@ function model_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g:
     println(" J=",J)
     println(" W=",W)=#
     
-    mex,lt_mex,l_mex,mex_cliq,lmex_cliq,v,s2k,sort_v,re_ind=get_mex_CS_CGAL(k,n,lI,p,I)
+    mex,lt_mex,l_mex,mex_cliq,lmex_cliq,v,s2k,sort_v,lsort_v=get_mex_CS_CGAL(k,n,lI,p,I)
+
     
     Indf,lIndf=decomp_obj(supp_f,lmon_f,I,p,n)
     
-     omega_cliq,a0_cliq,a_ind1_cliq,a_ind2_cliq,a_val_cliq,a_len_cliq,a_mex_ind,a_mex_val,r_cliq,u_cliq,s_cliq,zeta_cliq,d_cliq,ak=run_model_cliq_CS_CGAL(p,lI,lJ,lW,I,J,W,lIndf,Indf,supp_f,coe_f,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,dg,dh,v,s2k,sort_v,re_ind,mex_cliq,lmex_cliq,k,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace)
+     omega_cliq,a0_cliq,a_ind1_cliq,a_ind2_cliq,a_val_cliq,a_len_cliq,a_mex_ind,a_mex_val,r_cliq,u_cliq,s_cliq,zeta_cliq,d_cliq,ak=run_model_cliq_CS_CGAL(p,lI,lJ,lW,I,J,W,lIndf,Indf,supp_f,coe_f,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,dg,dh,v,s2k,sort_v,lsort_v,mex_cliq,lmex_cliq,k,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace)
 
     
     d=sum(d_cliq)
@@ -115,10 +124,14 @@ function model_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g:
     push!(a_val,ak)
     a_len+=1
     
+    if check_by_mosek
+        @time val=test_Mosek_CS(sparse(a_ind1,a_ind2,a_val),a0,d,p,omega_cliq,s_cliq,zeta)
+        return val
+    end
     
-    a_val,a0,norm_a0,opnorm_a=rescale_dense(a_ind1,a_ind2,a_val,a_len,a0,zeta)
+    _,_,a_val,_,a0,norm_a0,opnorm_a,_,_=rescale_dense(a_ind1,a_ind2,a_val,a_len,a0,zeta)
     
-   
+    
     
     
    
@@ -151,6 +164,47 @@ function model_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g:
     println("Modeling time:")
  
     return omega_cliq,a0_block,a_block,s_cliq,zeta,norm_a0,opnorm_a,ak,p
+end
+
+function test_Mosek_CS(a,a0,d,p,omega_cliq,s_cliq,zeta)
+    b=spzeros(Float64,zeta)
+    b[end]=1
+    println("Mosek:-----------------")
+    model=JuMP.Model(with_optimizer(Mosek.Optimizer, QUIET=false))
+
+    xvec=@variable(model, [1:d])
+    
+    @constraint(model, a'*xvec.==b)
+    
+    X=Vector{Vector{Matrix{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}}}}(undef,p)
+    t=1
+    for j=1:p
+        X[j]=Vector{Matrix{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}}}(undef,omega_cliq[j])
+        for i=1:omega_cliq[j]
+            X[j][i]=Matrix{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}}(undef,s_cliq[j][i],s_cliq[j][i])
+            for ii=1:s_cliq[j][i]
+                for jj=1:ii
+                    X[j][i][ii,jj]=xvec[t]/sqrt(1+(jj<ii))
+                    X[j][i][jj,ii]= X[j][i][ii,jj]
+                    t+=1
+                end
+            end
+            if s_cliq[j][i]!=1
+                @constraint(model, X[j][i] in PSDCone())
+            else
+                @constraint(model, X[j][i].>=0)
+            end
+        end
+    end
+
+    
+    @objective(model, Min, a0'*xvec)
+    optimize!(model)
+    val=termination_status(model)
+    println(val)
+    println(objective_value(model))
+    println("-----------------")
+    return val
 end
 
 
@@ -247,15 +301,19 @@ end
     
 
 
-function POP_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{SparseMatrixCSC{UInt64}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{SparseMatrixCSC{UInt64}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::SparseMatrixCSC{UInt64},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64;maxit::Int64=Int64(1e6),tol::Float64=1e-3,use_eqcons_to_get_constant_trace::Bool=true,check_tol_each_iter::Bool=true)
+function POP_CS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Vector{Vector{UInt64}},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64;maxit::Int64=Int64(1e6),tol::Float64=1e-3,use_eqcons_to_get_constant_trace::Bool=true,check_tol_each_iter::Bool=true,check_by_mosek=false)
 
     @time begin
     
-    
-    @time omega_cliq,a0_block,a_block,s_cliq,zeta,norm_a0,opnorm_a,ak,p=model_CS_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace)
-
+    if check_by_mosek
+          opt_val=model_CS_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace, check_by_mosek=check_by_mosek)
+        else
+    @time omega_cliq,a0_block,a_block,s_cliq,zeta,norm_a0,opnorm_a,ak,p=model_CS_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace, check_by_mosek=check_by_mosek)
+            
+            @time opt_val=solve_CS_CGAL(omega_cliq,a0_block,a_block,s_cliq,zeta,norm_a0,opnorm_a,ak,p,maxit=maxit,tol=tol,check_tol_each_iter=check_tol_each_iter)
+        end
       
-    @time opt_val=solve_CS_CGAL(omega_cliq,a0_block,a_block,s_cliq,zeta,norm_a0,opnorm_a,ak,p,maxit=maxit,tol=tol,check_tol_each_iter=check_tol_each_iter)
+    
     
     println("Total time:")
                     end

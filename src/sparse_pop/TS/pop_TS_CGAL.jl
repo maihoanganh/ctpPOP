@@ -1,9 +1,8 @@
-function get_blocks_TS(t::Int64,n::Int64,m::Int64,l::Int64,Usupp::Matrix{UInt64},sk::Int64,sk_g::Vector{UInt64},sk_h::Vector{UInt64},lmon_g::Vector{UInt64},lmon_h::Vector{UInt64},supp_g::Vector{Matrix{UInt64}},supp_h::Vector{Matrix{UInt64}},coe_g::Vector{Vector{Float64}},coe_h::Vector{Vector{Float64}},v::Matrix{UInt64})
+function get_blocks_TS(t::Int64,n::Int64,m::Int64,l::Int64,Usupp::Vector{Vector{UInt64}},sk::Int64,sk_g::Vector{UInt64},sk_h::Vector{UInt64},lmon_g::Vector{UInt64},lmon_h::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},supp_h::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},coe_h::Vector{Vector{Float64}},v::Vector{Vector{UInt64}})
     
-    
-    Usupp=sortslices(Usupp,dims=2)
-    Usupp=unique(Usupp,dims=2)
-    lUsupp=size(Usupp,2)
+    Usupp=unique(Usupp)
+    Usupp=sort(Usupp)
+    lUsupp=length(Usupp)
 
     block_g0=Vector{Vector{UInt64}}(undef,1)
     block_g=Vector{Vector{Vector{UInt64}}}(undef,m)
@@ -29,7 +28,7 @@ function get_blocks_TS(t::Int64,n::Int64,m::Int64,l::Int64,Usupp::Matrix{UInt64}
     while iter<=t
         graph=SimpleGraph(sk)
         for p in 1:sk, q in p:sk
-            if bfind(Usupp,lUsupp,v[:,p]+v[:,q],n)!=0
+            if ncbfind(Usupp,lUsupp,_sym_canon([v[p][end:-1:1];v[q]]))!=0
                add_edge!(graph,p,q)
             end
         end
@@ -43,7 +42,7 @@ function get_blocks_TS(t::Int64,n::Int64,m::Int64,l::Int64,Usupp::Matrix{UInt64}
             for p in 1:sk_g[i]
                 for q in p:sk_g[i] 
                     while y<=lmon_g[i]
-                        if bfind(Usupp,lUsupp,v[:,p]+v[:,q]+supp_g[i][:,y],n)!=0
+                        if ncbfind(Usupp,lUsupp,_sym_canon([v[p][end:-1:1];supp_g[i][y];v[q]]))!=0
                             break
                         else
                             y+=1
@@ -67,7 +66,7 @@ function get_blocks_TS(t::Int64,n::Int64,m::Int64,l::Int64,Usupp::Matrix{UInt64}
             for p in 1:sk_h[i]
                 for q in p:sk_h[i]
                     while y<=lmon_h[i]
-                        if bfind(Usupp,lUsupp,v[:,p]+v[:,q]+supp_h[i][:,y],n)!=0
+                        if ncbfind(Usupp,lUsupp,_sym_canon([v[p][end:-1:1];supp_h[i][y];v[q]]))!=0
                             break
                         else
                             y+=1
@@ -83,12 +82,12 @@ function get_blocks_TS(t::Int64,n::Int64,m::Int64,l::Int64,Usupp::Matrix{UInt64}
             lblock_h[i]=length(block_h[i])
             lt_block_h[i]=[length(block_h[i][j]) for j in 1:lblock_h[i]]
         end
-
-        Usupp=zeros(UInt64,n,Int64(0.5*sum(lt_block_g0[j]*(lt_block_g0[j]+1) for j in 1:lblock_g0)))
+        
+        Usupp=Vector{Vector{UInt64}}(undef,Int64(0.5*sum(lt_block_g0[j]*(lt_block_g0[j]+1) for j in 1:lblock_g0)))
         t_supp=1
         for j in 1:lblock_g0
             for p in 1:lt_block_g0[j], q in p:lt_block_g0[j]
-                Usupp[:,t_supp]=v[:,block_g0[j][p]]+v[:,block_g0[j][q]]
+                Usupp[t_supp]=_sym_canon([v[block_g0[j][p]][end:-1,1];v[block_g0[j][q]]])
                 t_supp+=1
             end
         end
@@ -113,9 +112,9 @@ function get_blocks_TS(t::Int64,n::Int64,m::Int64,l::Int64,Usupp::Matrix{UInt64}
             end
         end
         =#
-        Usupp=sortslices(Usupp,dims=2)
-        Usupp=unique(Usupp,dims=2)
-        lUsupp=size(Usupp,2)
+        Usupp=unique(Usupp)
+        Usupp=sort(Usupp)
+        lUsupp=length(Usupp)
 
 
         if iter==1
@@ -152,22 +151,28 @@ end
 
 
 
-function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Matrix{UInt64}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Matrix{UInt64}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Matrix{UInt64},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;use_eqcons_to_get_constant_trace::Bool=true)
+function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Vector{Vector{UInt64}},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;use_eqcons_to_get_constant_trace::Bool=true)
 
     v,sk,sk_g,s2k_g,sk_h,s2k_h,ak,P,Pg=get_constant_trace_dense(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,use_eqcons_to_get_constant_trace=use_eqcons_to_get_constant_trace)
 
     
-    Usupp=[2*v[:,1:sk] supp_f]
+    Usupp=[[[v[i][end:-1:1];v[i]] for i in 1:sk];supp_f]
     
     if m>0
-        Usupp=[Usupp hcat(supp_g...)]
+        Usupp=[Usupp;vcat(supp_g...)]
     end
         
     if l>0
-        Usupp=[Usupp hcat(supp_h...)]
+        Usupp=[Usupp;vcat(supp_h...)]
     end
+    
+
+    
+    Usupp=_sym_canon.(Usupp)
+    
+    
    
-    Usupp,lUsupp,block_g0,block_g,block_h,lblock_g0,lblock_g,lblock_h,lt_block_g0,lt_block_g,lt_block_h=get_blocks_TS(t,n,m,l,Usupp,sk,sk_g,sk_h,lmon_g,lmon_h,supp_g,supp_h,coe_g,coe_h,v[:,1:sk])
+    Usupp,lUsupp,block_g0,block_g,block_h,lblock_g0,lblock_g,lblock_h,lt_block_g0,lt_block_g,lt_block_h=get_blocks_TS(t,n,m,l,Usupp,sk,sk_g,sk_h,lmon_g,lmon_h,supp_g,supp_h,coe_g,coe_h,v[1:sk])
     
     omega=Int64(lblock_g0+sum(lblock_g))
     
@@ -179,7 +184,7 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
     end
    
     
-    Order(alpha)=bfind(Usupp,lUsupp,alpha,n)
+    
     
     w=[Int64(0.5*lt_block_g0[j]*(lt_block_g0[j]+1)) for j in 1:lblock_g0]
     w_g=[[@inbounds Int64(0.5*lt_block_g[i][j]*(lt_block_g[i][j]+1)) for j in 1:lblock_g[i]] for i in 1:m]
@@ -193,10 +198,20 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
     d=u+sum(u_g)
    
     
+    Usupp=Vector{Vector{UInt64}}(undef,u)
+    t_iter=1
+    for j in 1:lblock_g0
+        for p in 1:lt_block_g0[j], q in 1:p
+            @inbounds Usupp[t_iter]=_sym_canon([v[block_g0[j][p]][end:-1:1];v[block_g0[j][q]]])
+            t_iter+=1
+        end
+    end
+
+    Usupp=unique(Usupp)
+    Usupp=sort(Usupp)
+    lUsupp=length(Usupp) 
     
-    zeta=d-lUsupp
-    
-    
+    Order(alpha::Vector{UInt64})=ncbfind(Usupp,lUsupp,_sym_canon(alpha))
 
     IndM=[@inbounds Vector{Vector{Int64}}([]) for j in 1:lUsupp]
     invIndeM=spzeros(UInt64,sk,sk)
@@ -208,11 +223,15 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
     a_val=Vector{Float64}([])
     a_len=UInt64(0)
     
+    a_ind1_=Vector{UInt64}([])
+    a_val_=Vector{Float64}([])
+    a_len_=UInt64(0)
+    
     t_blo=0
     
     for j in 1:lblock_g0
         for p in 1:lt_block_g0[j], q in 1:p
-            @inbounds r=Order(v[:,block_g0[j][p]]+v[:,block_g0[j][q]])
+            @inbounds r=Order([v[block_g0[j][p]][end:-1:1];v[block_g0[j][q]]])
             @inbounds push!(IndM[r],[block_g0[j][p],block_g0[j][q]])
             @inbounds invIndeM[block_g0[j][p],block_g0[j][q]]=t_iter
             @inbounds t_iter+=1
@@ -223,10 +242,11 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
    
     
     
-    t_a=1
+    t_a=UInt64(1)
     
     
     I=zeros(UInt64,2)
+    I_=zeros(UInt64,2)
             
     for r in 1:lUsupp
         if l_IndM[r]>1
@@ -250,30 +270,31 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
     end
     
     
-    Usupp_g=Vector{Matrix{UInt64}}(undef,m)
+    Usupp_g=Vector{Vector{Vector{UInt64}}}(undef,m)
     lUsupp_g=zeros(UInt64,m)
 
     
     for i in 1:m     
-        Usupp_g[i]=zeros(UInt64,n,u_g[i])
+        Usupp_g[i]=Vector{Vector{UInt64}}(undef,u_g[i])
         t_iter=1
         for j in 1:lblock_g[i]
             for p in 1:lt_block_g[i][j], q in p:lt_block_g[i][j]
-                @inbounds Usupp_g[i][:,t_iter]=v[:,block_g[i][j][p]]+v[:,block_g[i][j][q]]
+                @inbounds Usupp_g[i][t_iter]=_sym_canon([v[block_g[i][j][p]][end:-1:1];v[block_g[i][j][q]]])
                 t_iter+=1
             end
         end
         
-        Usupp_g[i]=sortslices(Usupp_g[i],dims=2)
-        Usupp_g[i]=unique(Usupp_g[i],dims=2)
-        lUsupp_g[i]=size(Usupp_g[i],2) 
+        Usupp_g[i]=unique(Usupp_g[i])
+        Usupp_g[i]=sort(Usupp_g[i])
+        lUsupp_g[i]=length(Usupp_g[i]) 
     end
    
     IndMg=[[Vector{Vector{Int64}}([]) for j in 1:lUsupp_g[i]] for i in 1:m]
     invIndeMg=[spzeros(UInt64,sk_g[i],sk_g[i]) for i in 1:m]
     t_Blo=u
  
- 
+    vec=spzeros(Float64,d)
+    
     for i in 1:m
         r=UInt64(0)
         t_iter=UInt64(1)
@@ -281,7 +302,7 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
         t_blo=0
         for j in 1:lblock_g[i]
             for p in 1:lt_block_g[i][j], q in 1:p
-                @inbounds r=bfind(Usupp_g[i],lUsupp_g[i],v[:,block_g[i][j][p]]+v[:,block_g[i][j][q]],n)
+                @inbounds r=ncbfind(Usupp_g[i],lUsupp_g[i],_sym_canon([v[block_g[i][j][p]][end:-1:1];v[block_g[i][j][q]]]))
                 @inbounds push!(IndMg[i][r],[block_g[i][j][p];block_g[i][j][q]])
                 @inbounds invIndeMg[i][p+t_blo,q+t_blo]=t_iter
                 t_iter+=1
@@ -317,61 +338,66 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
             
             
            
-            I=IndMg[i][rr][1]
-            push!(a_ind1,invIndeMg[i][I[1],I[2]]+t_Blo)
+            I_=IndMg[i][rr][1]
+            push!(a_ind1,invIndeMg[i][I_[1],I_[2]]+t_Blo)
             push!(a_ind2,t_a)
-            push!(a_val,-ak/Pg[i][I[1]]/Pg[i][I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1))
+            push!(a_val,-ak/Pg[i][I_[1]]/Pg[i][I_[2]]*((0.5*sqrt(2)-1)*(I_[2]<I_[1])+1))
             a_len+=1
             
             for p in 1:lmon_g[i]  
-                I=IndM[Order(supp_g[i][:,p]+Usupp_g[i][:,rr])][end]
-                push!(a_ind1,invIndeM[I[1],I[2]])
-                push!(a_ind2,t_a)
-                push!(a_val,coe_g[i][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1))
-                a_len+=1
+                I=IndM[Order([v[I_[1]][end:-1:1];supp_g[i][p];v[I_[2]]])][end]
+                vec[invIndeM[I[1],I[2]]]+=coe_g[i][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
             end
-            t_a+=1
-            
+            a_ind1_,a_val_=findnz(vec)
+            a_len_=length(a_ind1_)
+            a_ind1=[a_ind1;a_ind1_]
+            a_val=[a_val;a_val_]
+            a_ind2=[a_ind2;t_a*ones(UInt64,a_len_)]
+            a_len+=a_len_
+            @inbounds t_a+=1
+            vec=spzeros(Float64,d)
          end
          t_Blo+=u_g[i]
     end
     
-    Usupp_h=Vector{Matrix{UInt64}}(undef,l)
+    Usupp_h=Vector{Vector{Vector{UInt64}}}(undef,l)
     lUsupp_h=zeros(UInt64,l)
     
     
     
     for i in 1:l
-        Usupp_h[i]=zeros(UInt64,n,Int(0.5*sum(lt_block_h[i][j]*(lt_block_h[i][j]+1) for j in 1:lblock_h[i])))
+        Usupp_h[i]=Vector{Vector{UInt64}}(undef,Int(0.5*sum(lt_block_h[i][j]*(lt_block_h[i][j]+1) for j in 1:lblock_h[i])))
         t_iter=1
         for j in 1:lblock_h[i]
             for p in 1:lt_block_h[i][j], q in p:lt_block_h[i][j]
-                @inbounds Usupp_h[i][:,t_iter]=v[:,block_h[i][j][p]]+v[:,block_h[i][j][q]]
+                @inbounds Usupp_h[i][t_iter]=_sym_canon([v[block_h[i][j][p]][end:-1:1];v[block_h[i][j][q]]])
                 t_iter+=1
             end
         end
-        Usupp_h[i]=sortslices(Usupp_h[i],dims=2)
-        Usupp_h[i]=unique(Usupp_h[i],dims=2)
-        lUsupp_h[i]=size(Usupp_h[i],2)
+        Usupp_h[i]=unique(Usupp_h[i])
+        Usupp_h[i]=sort(Usupp_h[i])
+        lUsupp_h[i]=length(Usupp_h[i])
     end
     
 
-    zeta+=sum(lUsupp_h)+1
+
     
-    println("  Number of equality trace constraints: zeta=",zeta)
-    
-    
+    vec=spzeros(Float64,d)
     @simd for j in 1:l
         @simd for r in 1:lUsupp_h[j]
+            I_=IndM[Order(Usupp_h[j][r])][1]
             @simd for p in 1:lmon_h[j]
-                      I=IndM[Order(supp_h[j][:,p]+Usupp_h[j][:,r])][1]
-                      push!(a_ind1,invIndeM[I[1],I[2]])
-                      push!(a_ind2,t_a)
-                      push!(a_val,coe_h[j][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1))
-                      a_len+=1
-                
+                      I=IndM[Order([v[I_[1]][end:-1:1];supp_h[j][p];v[I_[2]]])][1]
+                      vec[invIndeM[I[1],I[2]]]+=coe_h[j][p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
                    end
+                    a_ind1_,a_val_=findnz(vec)
+                    a_len_=length(a_ind1_)
+                    a_ind1=[a_ind1;a_ind1_]
+                    a_val=[a_val;a_val_]
+                    a_ind2=[a_ind2;t_a*ones(UInt64,a_len_)]
+                    a_len+=a_len_
                     @inbounds t_a+=1
+                    vec=spzeros(Float64,d)
                end       
     end  
     
@@ -383,15 +409,16 @@ function model_POP_TS(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::
     a_len+=1
    
             
-
+    zeta=t_a 
+    println("  Number of equality trace constraints: zeta=",zeta)
+    
+    
 
     a0=zeros(Float64,d)
-    
-    
     @simd for p in 1:lmon_f
-        I=IndM[Order(supp_f[:,p])][1]
-        a0[invIndeM[I[1],I[2]]]=coe_f[p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
-   end
+        I=IndM[Order(supp_f[p])][1]
+        a0[invIndeM[I[1],I[2]]]+=coe_f[p]*ak/P[I[1]]/P[I[2]]*((0.5*sqrt(2)-1)*(I[2]<I[1])+1)
+    end
     
     
     a_val,a0,norm_a0,opnorm_a=rescale_dense(a_ind1,a_ind2,a_val,a_len,a0,zeta)
@@ -457,7 +484,7 @@ end
 
 
 
-function POP_TS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Matrix{UInt64}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Matrix{UInt64}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Matrix{UInt64},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;maxit::Int64=Int64(1e5),tol::Float64=1e-4,use_eqcons_to_get_constant_trace::Bool=true,check_tol_each_iter::Bool=true)
+function POP_TS_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Vector{Vector{UInt64}},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;maxit::Int64=Int64(1e5),tol::Float64=1e-4,use_eqcons_to_get_constant_trace::Bool=true,check_tol_each_iter::Bool=true)
 
     @time begin
     

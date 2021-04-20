@@ -1,6 +1,50 @@
-function solve_CS_LMBM(omega_cliq::Vector{Int64},a0_block::Vector{Vector{Adjoint{Float64,Array{Float64,1}}}},a_block::Vector{Vector{SparseMatrixCSC{Float64}}},s_cliq::Vector{Vector{UInt64}},zeta::UInt64,norm_a0::Float64,opnorm_a::Float64,ak::Float64,p::Int64;tol::Float64=1e-4)
+function test_Mosek_CS(a_block,a0_block,p,omega_cliq,s_cliq,zeta)
+    b=spzeros(Float64,zeta)
+    b[end]=1
+    println("Mosek:-----------------")
+    model=JuMP.Model(with_optimizer(Mosek.Optimizer, QUIET=true))
+
+    xvec=[@variable(model, [1:d]) for j in ]
+    
+    @constraint(model, a'*xvec.==b)
+    
+    X=Vector{Vector{Matrix{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}}}}(undef,p)
+    t=1
+    for j=1:p
+        X[j]=Vector{Matrix{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}}}(undef,omega_cliq[j])
+        for i=1:omega_cliq[j]
+            X[j][i]=Matrix{JuMP.GenericAffExpr{Float64,JuMP.VariableRef}}(undef,s_cliq[j][i],s_cliq[j][i])
+            for ii=1:s_cliq[j][i]
+                for jj=1:ii
+                    X[j][i][ii,jj]=xvec[t]/sqrt(1+(jj<ii))
+                    X[j][i][jj,ii]= X[j][i][ii,jj]
+                    t+=1
+                end
+            end
+            if s_cliq[j][i]!=1
+                @constraint(model, X[j][i] in PSDCone())
+            else
+                @constraint(model, X[j][i].>=0)
+            end
+        end
+    end
+    
+    @objective(model, Min, a0'*xvec)
+    optimize!(model)
+    println(termination_status(model))
+    println(objective_value(model))
+    println("-----------------")
+end
+
+
+
+
+
+function solve_CS_Mosek(omega_cliq::Vector{Int64},a0_block::Vector{Vector{Adjoint{Float64,Array{Float64,1}}}},a_block::Vector{Vector{SparseMatrixCSC{Float64}}},s_cliq::Vector{Vector{UInt64}},zeta::UInt64,norm_a0::Float64,opnorm_a::Float64,ak::Float64,p::Int64;tol::Float64=1e-4)
                     
                     
+test_Mosek_CS(sparse(a_ind1,a_ind2,a_val),a0,d,p,omega_cliq,s_cliq,zeta)
+
     println("**LMBM solver:")
     function phi(nvar::Cint,xp::Ptr{Cdouble},gp::Ptr{Cdouble})
         zvar=unsafe_wrap(Array, xp, (convert(Int, nvar),))
@@ -37,6 +81,7 @@ function solve_CS_LMBM(omega_cliq::Vector{Int64},a0_block::Vector{Vector{Adjoint
     return opt_val
                                   
 end
+
     
 
 
@@ -54,5 +99,4 @@ function POP_CS_LMBM(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::V
                     end
     return opt_val
 end
-                
-  
+

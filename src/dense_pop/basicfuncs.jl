@@ -1,9 +1,9 @@
-function get_info(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vector{Polynomial{true,Float64}},h::Vector{Polynomial{true,Float64}};sparse::Bool=false)
+numlet(n,d)=sum(n^j for j in 0:d)
+
+function get_info(x::Vector{PolyVar{false}},f::Polynomial{false,Float64},g::Vector{Polynomial{false,Float64}},h::Vector{Polynomial{false,Float64}})
     n=length(x)
     m=length(g)
     l=length(h)
-            
-   
     
     lmon_g=Vector{UInt64}(undef,m)
     coe_g=Vector{Vector{Float64}}(undef,m)
@@ -11,13 +11,9 @@ function get_info(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vector
     lmon_h=Vector{UInt64}(undef,l)
     coe_h=Vector{Vector{Float64}}(undef,l)
     
-    if sparse
-        supp_g=Vector{SparseMatrixCSC{UInt64}}(undef,m)
-        supp_h=Vector{SparseMatrixCSC{UInt64}}(undef,l)
-    else
-        supp_g=Vector{Matrix{UInt64}}(undef,m)
-        supp_h=Vector{Matrix{UInt64}}(undef,l)
-    end
+    supp_g=Vector{Vector{Vector{UInt64}}}(undef,m)
+    supp_h=Vector{Vector{Vector{UInt64}}}(undef,l)
+    
         
     dg=Vector{Int64}(undef,m)
     dh=Vector{Int64}(undef,l)
@@ -36,98 +32,117 @@ function get_info(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vector
     return n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh
 end
 
-function info(f::Polynomial{true},x::Vector{PolyVar{true}},n::Int64;sparse=false)
-    
+function info(f::Polynomial{false},x::Vector{PolyVar{false}},n::Int64;sparse=false)
+    n=length(x)
     mon=monomials(f)
     coe=coefficients(f)
-    lmon=length(mon)
-    if sparse==false
-        supp=zeros(UInt64,n,lmon)
-    else
-        supp=spzeros(UInt64,n,lmon)
-    end
-    @simd for i in 1:lmon
-        @simd for j in 1:n
-            @inbounds supp[j,i]=DynamicPolynomials.degree(mon[i],variable(x[j]))
+    lm=length(mon)
+    supp=[UInt64[] for i in 1:lm]
+    for i in 1:lm
+        ind=mon[i].z .>0
+        vars=mon[i].vars[ind]
+        exp=mon[i].z[ind]
+        for j in 1:length(vars)
+            k=ncbfind(x, n, vars[j], rev=true)
+            append!(supp[i], k*ones(UInt64, exp[j]))
         end
     end
-    return lmon, supp, coe
+    return lm, supp, coe
 end
        
 
 
-function get_basis(n::Int64,d::Int64)
-    
+
+function get_basis(n,d)
     lb=binomial(n+d,d)
-    basis=zeros(UInt64,n,lb)
-    i=UInt64(0)
-    t=UInt64(1)
+    basis=zeros(UInt8,n,lb)
+    i=0
+    t=1
     while i<d+1
-        if basis[n,t]==i
+        t+=1
+        if basis[n,t-1]==i
            if i<d
-              @inbounds t+=1
-              @inbounds basis[1,t]=i+1
-              @inbounds i+=1
-           else 
-                @inbounds i+=1
+              basis[1,t]=i+1
            end
-        else 
-            j=UInt64(1)
-             while basis[j,t]==0
-                   @inbounds j+=1
-             end
-             if j==1
-                @inbounds t+=1
-                @inbounds basis[:,t]=basis[:,t-1]
-                @inbounds basis[1,t]=basis[1,t]-1
-                @inbounds basis[2,t]=basis[2,t]+1
-                else t+=1
-                  @inbounds basis[:,t]=basis[:,t-1]
-                  @inbounds basis[1,t]=basis[j,t]-1
-                  @inbounds basis[j,t]=0
-                  @inbounds basis[j+1,t]=basis[j+1,t]+1
-             end
+           i+=1
+        else
+            j=findfirst(x->basis[x,t-1]!=0,1:n)
+            basis[:,t]=basis[:,t-1]
+            if j==1
+               basis[1,t]-=1
+               basis[2,t]+=1
+            else
+               basis[1,t]=basis[j,t]-1
+               basis[j,t]=0
+               basis[j+1,t]+=1
+            end
         end
     end
     return basis
 end
 
+
+function get_ncbasis(n, d; ind=UInt64[i for i=1:n])
+    basis=[UInt64[]]
+    for i=1:d
+        append!(basis, _get_ncbasis_deg(n, i, ind=ind))
+    end
+    return basis
+end
+
+function _get_ncbasis_deg(n, d; ind=UInt64[i for i=1:n])
+    if d>0
+        basis=Vector{UInt64}[]
+        for i=1:n
+            temp=_get_ncbasis_deg(n, d-1, ind=ind)
+            push!.(temp, ind[i])
+            append!(basis, temp)
+        end
+        return basis
+    else
+        return [UInt64[]]
+    end
+end
+
 #function bfind(A::Matrix{UInt64},l::Int64,a::Vector{UInt64},n::Int64)
-function bfind(A,l,a,n)
+function ncbfind(A, l, a; rev=false)
     if l==0
         return 0
     end
-    low=UInt64(1)
+    low=1
     high=l
     while low<=high
-        @inbounds mid=Int(ceil(1/2*(low+high)))
-        @inbounds order=comp(A[:,mid],a,n)
-        if order==0
+        mid=Int(ceil(1/2*(low+high)))
+        if isequal(A[mid], a)
            return mid
-        elseif order<0
-           @inbounds low=mid+1
+        elseif isless(A[mid], a)
+            if rev==false
+                low=mid+1
+            else
+                high=mid-1
+            end
         else
-           @inbounds high=mid-1
+            if rev==false
+                high=mid-1
+            else
+                low=mid+1
+            end
         end
     end
     return 0
 end
 
-#function comp(a::Vector{UInt64},b::Vector{UInt64},n::Int64)
-function comp(a,b,n)
-    i=UInt64(1)
-    while i<=n
-          if a[i]<b[i]
-             return -1
-          elseif a[i]>b[i]
-             return 1
-          else
-             @inbounds i+=1
-          end
+
+function _sym_canon(a::Vector{UInt64})
+    i=1
+    while i<=Int(ceil((length(a)-1)/2))
+        if a[i]<a[end+1-i]
+            return a
+        elseif a[i]>a[end+1-i]
+            return reverse(a)
+        else
+            i+=1
+        end
     end
-    if i==n+1
-       return 0
-    end
+    return a
 end
-
-

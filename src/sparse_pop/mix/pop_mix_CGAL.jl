@@ -1,9 +1,16 @@
-function model_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{SparseMatrixCSC{UInt64}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{SparseMatrixCSC{UInt64}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::SparseMatrixCSC{UInt64},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;use_eqcons_to_get_constant_trace::Bool=true)
+function model_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Vector{Vector{UInt64}},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;use_eqcons_to_get_constant_trace::Bool=true)
     
     
     
-    I,p,lI=clique_decomp(n,m+l,[dg;dh],[[supp_f];supp_g;supp_h],order=k,alg="MD",minimize=true)
-    #J,lJ,~=get_indcons(m,supp_g,I,p,lI,assign="all")
+    function matsupp(supp,lmon)
+        mat=spzeros(UInt64,n,lmon)
+        for j in 1:lmon
+            mat[unique(supp[j]),j].=1
+        end
+        return mat
+    end
+    
+    I,p,lI=clique_decomp(n,m+l,[dg;dh],[[matsupp(supp_f,lmon_f)];[matsupp(supp_g[i],lmon_g[i]) for i in 1:m];[matsupp(supp_h[i],lmon_h[i]) for i in 1:l]],order="max",alg="MD",minimize=true)
     
     indJ_out=Vector{UInt64}([])
     indJ_in=Vector{UInt64}([])
@@ -28,22 +35,26 @@ function model_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g
     println("  Largest clique size: u=", maximum(lI))
     
     lSupp=lmon_f+sum(lmon_g)+sum(lmon_h)
-    Supp=spzeros(UInt64,n,lSupp)
-    Supp[:,1:lmon_f]=supp_f
+    Supp=Vector{Vector{UInt64}}(undef,lSupp)
+    Supp[1:lmon_f]=supp_f
     t_blo=lmon_f
     for j in 1:m
-        Supp[:,1+t_blo:lmon_g[j]+t_blo]=supp_g[j]
+        Supp[1+t_blo:lmon_g[j]+t_blo]=supp_g[j]
         t_blo+=lmon_g[j]
     end
     for j in 1:l
-        Supp[:,1+t_blo:lmon_h[j]+t_blo]=supp_h[j]
+        Supp[1+t_blo:lmon_h[j]+t_blo]=supp_h[j]
         t_blo+=lmon_h[j]
     end
+    Supp=_sym_canon.(Supp)
+    Supp=unique(Supp)
+    lSupp=length(Supp)
+    
     
     #Need to remove
     IndA=[UInt64[] for i in 1:p]
     for j in 1:lSupp
-        ind=findall(y->y>0,Supp[:,j])
+        ind=unique(Supp[j])
         for i in 1:p
             if issubset(ind,I[i])
                 push!(IndA[i],j)
@@ -137,7 +148,7 @@ function model_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g
     a_len+=1
     
     
-    a_val,a0,norm_a0,opnorm_a=rescale_dense(a_ind1,a_ind2,a_val,a_len,a0,zeta)
+    _,_,a_val,_,a0,norm_a0,opnorm_a,_,_=rescale_dense(a_ind1,a_ind2,a_val,a_len,a0,zeta)
     
     
     Ind=Vector{Vector{Vector{UInt64}}}(undef,p)
@@ -177,7 +188,7 @@ end
 
 
 
-function POP_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{SparseMatrixCSC{UInt64}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{SparseMatrixCSC{UInt64}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::SparseMatrixCSC{UInt64},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;maxit::Int64=Int64(1e6),tol::Float64=1e-3,use_eqcons_to_get_constant_trace::Bool=true,check_tol_each_iter::Bool=true)
+function POP_mix_CGAL(n::Int64,m::Int64,l::Int64,lmon_g::Vector{UInt64},supp_g::Vector{Vector{Vector{UInt64}}},coe_g::Vector{Vector{Float64}},lmon_h::Vector{UInt64},supp_h::Vector{Vector{Vector{UInt64}}},coe_h::Vector{Vector{Float64}},lmon_f::Int64,supp_f::Vector{Vector{UInt64}},coe_f::Vector{Float64},dg::Vector{Int64},dh::Vector{Int64},k::Int64,t::Int64;maxit::Int64=Int64(1e6),tol::Float64=1e-3,use_eqcons_to_get_constant_trace::Bool=true,check_tol_each_iter::Bool=true)
 
     @time begin
     

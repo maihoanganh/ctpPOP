@@ -1,27 +1,21 @@
 function run_CS_POP(x::Vector{PolyVar{true}},f::Polynomial{true,Float64},g::Vector{Polynomial{true,Float64}},h::Vector{Polynomial{true,Float64}},k::Int64)
     
     println("Time to get information:")
-    @time n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=ctpPOP.get_info(x,f,g,h,sparse=true);
+    @time n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh=ctpNCPOP.get_info(x,f,g,h);
     println()
     println("--------------------------------------------------")
     println()
     println("**CTP+CGAL**")
     POP_CS_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,
-                     maxit=Int64(1e6),tol=1e-2,
-                     use_eqcons_to_get_constant_trace=false,
-                     check_tol_each_iter=true)
-    println()
-    println("--------------------------------------------------")
-    println()
-    println("**CTP+LMBM**")
-    POP_CS_LMBM(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,
-                     tol=1e-2,use_eqcons_to_get_constant_trace=false)
+    maxit=Int64(1e10),tol=1e-3,use_eqcons_to_get_constant_trace=false,check_tol_each_iter=true)
+    
     println()
     println("--------------------------------------------------")
     println()
     try
         println("**CS+Mosek**")
-        @time opt,sol,data=cs_tssos_first(Vector{SparseMatrixCSC{UInt8,UInt32}}([[supp_f];supp_g;supp_h]),[[coe_f];coe_g;coe_h],n,k,[dg;dh],numeq=l,CS="MD",TS=false);
+        @time POP_CS_CGAL(n,m,l,lmon_g,supp_g,coe_g,lmon_h,supp_h,coe_h,lmon_f,supp_f,coe_f,dg,dh,k,
+    maxit=Int64(1e10),tol=5e-3,use_eqcons_to_get_constant_trace=false,check_tol_each_iter=true,check_by_mosek=true)
     catch
         println("Mosek is out of space!!!")
     end
@@ -34,10 +28,10 @@ end
 
 
 function test_CS_POP_ball(n::Int64,umin::Int64,umax::Int64,k::Int64;have_eqcons::Bool=true)
-    @polyvar x[1:n]
-    f=Polynomial{true,Float64}(x[1]+0.0)
-    g=Vector{Polynomial{true,Float64}}([x[1]+0.0])
-    h=Vector{Polynomial{true,Float64}}([x[1]+0.0])
+    @ncpolyvar x[1:n]
+    f=Polynomial{false,Float64}(x[1]+0.0)
+    g=Vector{Polynomial{false,Float64}}([x[1]+0.0])
+    h=Vector{Polynomial{false,Float64}}([x[1]+0.0])
     
     for u in umin:5:umax
         x,f,g,h=generate_CS_POP_ball(n,u,have_eqcons=have_eqcons)
@@ -52,28 +46,47 @@ function generate_CS_POP_ball(n::Int64,u::Int64;have_eqcons::Bool=false)
     println("Number of variable: n=",n)
     println("====================")
 
-    @polyvar x[1:n]# variables
+    @ncpolyvar x[1:n]# variables
 
+    function star_algebra(mom)
+        if mom==1
+            return mom
+        else
+            ind=mom.z .>0
+            vars=mom.vars[ind]
+            exp=mom.z[ind]
+            return prod(vars[i]^exp[i] for i in length(exp):-1:1)
+        end
+    end
+
+    #function to get a random quadratic polynomial of variables x(T)
     function generate_random_poly(T::UnitRange{Int64})
         v=reverse(monomials(x[T],0:2))
+        v+=star_algebra.(v)
+        v=v./2
         c=2*rand(Float64,length(v)).-1
         return c'*v
     end
 
-    # unit sphere constraint
-    p=floor(Int64,n/u)+1
+    # ball constraints on subsets of variables
+    #u=10# clique size
+    p=floor(Int64,n/u) #number of cliques
 
+    # indices of variables on each clique
     I=Vector{UnitRange{Int64}}(undef,p)
-    I[1]=1:u
+    I[1]=1:u 
     I[2:p-1]=[u*(j-1):u*j for j in 2:p-1]
     I[p]=u*(p-1):n
 
     # random quadratic objective function f
-    vecf=[generate_random_poly(I[j]) for j in 1:p]
-    f=sum(vecf)
+    vecf=[generate_random_poly(I[j]) for j in 1:p] #vector of separable polynomials on each clique
+    f=sum(vecf)/100
 
+    # ball constraints on each clique
     g=[1.0-sum(x[I[j]].^2) for j in 1:p]
-    J=[j:j for j in 1:p]
+    J=[j:j for j in 1:p] # assign inequality constraints
+
+
 
     m=length(g)
     println("Number of inequality constraints: m=",m)
@@ -86,14 +99,13 @@ function generate_CS_POP_ball(n::Int64,u::Int64;have_eqcons::Bool=false)
     end
 
     r=floor(Int64,l/p)
-    W=[(j-1)*r+1:j*r for j in 1:p-1]
+    W=[(j-1)*r+1:j*r for j in 1:p-1]# assign equality constraints
     append!(W,[(p-1)*r+1:l])
 
-    h=Vector{Polynomial{true,Float64}}(undef,l)
+    h=Vector{Polynomial{false,Float64}}(undef,l)
 
-    #=randx=[2*rand(length(I[j])).-1 for j in 1:p]# create a feasible solution
-    randx=[randx[j]/norm(randx[j]) for j in 1:p]=#
 
+    # get a random point satisfies the inequality constraints
     randx=2*rand(Float64,n).-1
 
     for j in 1:p
@@ -104,7 +116,7 @@ function generate_CS_POP_ball(n::Int64,u::Int64;have_eqcons::Bool=false)
     for j in 1:p
         for i in W[j]
             h[i]=generate_random_poly(I[j])
-            h[i]-=h[i](x => randx) #make constraints feasible
+            h[i]-=h[i](x => randx) #make the random point satisfy the equality constraint h[i](randx) = 0
         end
     end
 

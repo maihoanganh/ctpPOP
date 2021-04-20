@@ -1,5 +1,4 @@
-function get_indcons(m::Int64,supp_g::Vector{SparseMatrixCSC{UInt64}},I::Vector{Vector{UInt16}},p::Int64,lI::Vector{Int64};assign::String="first")
-    
+function get_indcons(m::Int64,supp_g::Vector{Vector{Vector{UInt64}}},I::Vector{Vector{UInt16}},p::Int64,lI::Vector{Int64};assign::String="first")
     J=[UInt64[] for i in 1:p]
     ind=UInt64(0)
     indvec=zeros(Int64,1)
@@ -8,9 +7,9 @@ function get_indcons(m::Int64,supp_g::Vector{SparseMatrixCSC{UInt64}},I::Vector{
     temp=UInt64[]
     ncc=UInt64[]
     for i in 1:m
-        rind=unique(supp_g[i].rowval)
+        rind=unique(vcat(supp_g[i]...))
         if assign=="first"
-            ind=findfirst(k->issubset(rind, I[k]), 1:p)
+            ind=findfirst(k->issubset(rind,I[k]),1:p)
             if ind!=nothing
                 push!(J[ind], i)
             else
@@ -38,7 +37,6 @@ function get_indcons(m::Int64,supp_g::Vector{SparseMatrixCSC{UInt64}},I::Vector{
                 push!(ncc, i)
             end
             temp=UInt64[]   
-            
         else
             println("No assign!!!")
             
@@ -54,11 +52,33 @@ function decomp_obj(supp_f,lmon_f,I,p,n)
     
     ind=zeros(UInt64,1)
     for t in 1:lmon_f
-        ind=findall(j-> supp_f[j,t]!=0,1:n)
+        ind=unique(supp_f[t])#findall(j-> supp_f[j,t]!=0,1:n)
         append!(Indf[findfirst(i->issubset(ind,I[i]),1:p)],t)
     end   
     lIndf=[length(Indf[i]) for i in 1:p]
     return Indf,lIndf
+end
+
+
+function get_ncgraph(tsupp,basis;obj="eigen")
+    lb=length(basis)
+    G=SimpleGraph(lb)
+    ltsupp=length(tsupp)
+    for i = 1:lb, j = i+1:lb
+        bi = [basis[i][end:-1:1]; basis[j]]
+        bi=_sym_canon(bi)
+        if obj=="trace"
+            bi=_cyclic_canon(bi)
+        end
+        # if nx>0
+        #     bi=comm(bi, nx)
+        #     proj!(bi)
+        # end
+        if ncbfind(tsupp, ltsupp, bi)!=0
+           add_edge!(G, i, j)
+        end
+    end
+    return G
 end
 
 
