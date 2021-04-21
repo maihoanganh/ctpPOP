@@ -1,7 +1,7 @@
 # ctpPOP
 - ctpPOP is a Julia package of solving polynomial optimization problem (POP):
 
-**inf_{x in R^n} { f(x) : gi(x) = 0, hj(x) = 0 },**
+**inf_{x in R^n} { f(x) : gi(x) >= 0, hj(x) = 0 },**
 
 with some special cases of inequality constraints **gi**:
 
