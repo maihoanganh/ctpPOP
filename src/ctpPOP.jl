@@ -58,6 +58,8 @@ include("../test/test_mix_pop_box.jl")
 
 include("../test/test_comparison_COSMO_dense_pop_ball.jl")
 
+include("../test/test_Dense_nonQCQP_ball.jl")
+
 #OPF problems
 include("../test/test_opf_problems.jl")
 

@@ -85,6 +85,25 @@ function lmbm(optFun::Function,x::Array{Float64};na::Int=2,mcu::Int=5,printinfo:
   nw =convert(Cint,1 + 9*n + 2*n*na + 3*na + 2*n*(mcu+1) + 3*(mcu+2)*(mcu+1)/2 + 9*(mcu+1));
   w=zeros(Cdouble,nw);
   fVal=zeros(Cdouble,1);
+    
+#   ipar=convert(Array{Cint},[0,5000000,5000000,0,-1,0,0])
+ 
+#   rpar=convert(Array{Cdouble},[0,0,0,tol,tol,0.5,0.24,2])
+
+#   maxtime = convert(Cfloat,maxtime);
+#   rtim=zeros(Cfloat,2)
+#   iout=zeros(Cint,3)
+#   n=convert(Cint,length(x));
+#   na =convert(Cint,na);
+#   mcu =convert(Cint,mcu);
+#   mc =convert(Cint,7);
+#   nw =convert(Cint,1 + 9*n + 2*n*na + 3*na + 2*n*(mcu+1) + 3*(mcu+2)*(mcu+1)/2 + 9*(mcu+1));
+#   w=zeros(Cdouble,nw);
+#   fVal=zeros(Cdouble,1);
+    
+    
+    
+    
 
   if printinfo
     @printf("---------------\n");
