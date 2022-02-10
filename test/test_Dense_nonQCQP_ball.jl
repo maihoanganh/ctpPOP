@@ -47,14 +47,14 @@ function test_dense_nonQCQP_ball()
         run_dense_nonQCQP_ball(x,f,g,h,k)
     end
     
-    n=5
-    d=5
-    x,f,g,h=generate_dense_nonQCQP_ball(n,d,have_eqcons=true)
-    for k in [3;4]
-        println("Relaxed order: k=",k)
-        println("====================")
-        run_dense_nonQCQP_ball(x,f,g,h,k)
-    end
+#     n=5
+#     d=5
+#     x,f,g,h=generate_dense_nonQCQP_ball(n,d,have_eqcons=true)
+#     for k in [3;4]
+#         println("Relaxed order: k=",k)
+#         println("====================")
+#         run_dense_nonQCQP_ball(x,f,g,h,k)
+#     end
 end
     
 
